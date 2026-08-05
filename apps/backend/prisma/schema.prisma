@@ -6,23 +6,231 @@ datasource db {
   provider = "postgresql"
 }
 
-model Category {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(100)
-  createdAt DateTime @default(now()) @map("created_at")
-  items     Item[]
-
-  @@map("categories")
+model calorie_ranges {
+  id                       Int                        @id @default(autoincrement())
+  label                    String                     @unique
+  min_calories             Int?
+  max_calories             Int?
+  user_calorie_preferences user_calorie_preferences[]
 }
 
-model Item {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100)
-  description String   @db.Text
-  categoryId  Int      @map("category_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+model categories {
+  id      Int       @id @default(autoincrement())
+  name    String    @unique
+  recipes recipes[]
+}
 
-  @@index([categoryId])
-  @@map("items")
+model change_log {
+  id               BigInt    @id @default(autoincrement())
+  recipe_id        BigInt?
+  changed_by       String?   @db.Uuid
+  changed_by_email String
+  changed_at       DateTime? @default(now()) @db.Timestamp(6)
+  changes          Json
+  recipes          recipes?  @relation(fields: [recipe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model cooking_times {
+  id                            Int                             @id @default(autoincrement())
+  label                         String                          @unique
+  max_minutes                   Int?
+  user_cooking_time_preferences user_cooking_time_preferences[]
+}
+
+model cuisines {
+  id                       Int                        @id @default(autoincrement())
+  name                     String                     @unique
+  emoji                    String?
+  recipes                  recipes[]
+  user_cuisine_preferences user_cuisine_preferences[]
+}
+
+model diet_preferences {
+  id                      Int                       @id @default(autoincrement())
+  name                    String                    @unique
+  emoji                   String?
+  description             String?
+  recipe_diet_preferences recipe_diet_preferences[]
+  user_diet_preferences   user_diet_preferences[]
+}
+
+model grocery_list_items {
+  id              BigInt        @id @default(autoincrement())
+  grocery_list_id BigInt
+  ingredient_name String
+  total_quantity  Decimal?      @db.Decimal
+  unit            String?
+  is_checked      Boolean?      @default(false)
+  notes           String?
+  grocery_lists   grocery_lists @relation(fields: [grocery_list_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model grocery_lists {
+  id                 BigInt               @id @default(autoincrement())
+  meal_plan_id       BigInt               @unique
+  generated_at       DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamp(6)
+  grocery_list_items grocery_list_items[]
+  meal_plans         meal_plans           @relation(fields: [meal_plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model health_goals {
+  id                Int                 @id @default(autoincrement())
+  name              String              @unique
+  description       String?
+  user_health_goals user_health_goals[]
+}
+
+model ingredients {
+  id        BigInt   @id @default(autoincrement())
+  recipe_id BigInt
+  name      String
+  quantity  Decimal? @db.Decimal
+  unit      String?
+  notes     String?
+  recipes   recipes  @relation(fields: [recipe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model meal_plan_entries {
+  id           BigInt     @id @default(autoincrement())
+  meal_plan_id BigInt
+  recipe_id    BigInt?
+  day_of_week  String
+  meal_time    String
+  servings     Int?       @default(1)
+  notes        String?
+  meal_plans   meal_plans @relation(fields: [meal_plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  recipes      recipes?   @relation(fields: [recipe_id], references: [id], onUpdate: NoAction)
+
+  @@unique([meal_plan_id, day_of_week, meal_time], map: "unique_meal_slot")
+}
+
+model meal_plans {
+  id                BigInt              @id @default(autoincrement())
+  user_id           String              @db.Uuid
+  week_start        DateTime            @db.Date
+  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?           @default(now()) @db.Timestamp(6)
+  grocery_lists     grocery_lists?
+  meal_plan_entries meal_plan_entries[]
+
+  @@unique([user_id, week_start], map: "unique_user_week")
+}
+
+model meal_types {
+  id      Int       @id @default(autoincrement())
+  name    String    @unique
+  emoji   String?
+  recipes recipes[]
+}
+
+model preparation_steps {
+  id          BigInt  @id @default(autoincrement())
+  recipe_id   BigInt
+  step_number Int
+  instruction String
+  recipes     recipes @relation(fields: [recipe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model profiles {
+  id           String    @id @db.Uuid
+  email        String
+  display_name String?
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model recipe_diet_preferences {
+  recipe_id          BigInt
+  diet_preference_id Int
+  diet_preferences   diet_preferences @relation(fields: [diet_preference_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  recipes            recipes          @relation(fields: [recipe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([recipe_id, diet_preference_id])
+}
+
+model recipe_tags {
+  recipe_id BigInt
+  tag_id    Int
+  recipes   recipes @relation(fields: [recipe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags      tags    @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([recipe_id, tag_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model recipes {
+  id                      BigInt                    @id @default(autoincrement())
+  user_id                 String?                   @db.Uuid
+  category_id             Int?
+  cuisine_id              Int?
+  meal_type_id            Int?
+  name                    String
+  description             String?
+  cook_time               Int?
+  prep_time               Int?
+  servings                Int?                      @default(1)
+  calories_per_serving    Int?
+  difficulty              String?
+  notes                   String?
+  is_public               Boolean?                  @default(false)
+  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  updated_by              String?                   @db.Uuid
+  updated_by_email        String?
+  change_log              change_log[]
+  ingredients             ingredients[]
+  meal_plan_entries       meal_plan_entries[]
+  preparation_steps       preparation_steps[]
+  recipe_diet_preferences recipe_diet_preferences[]
+  recipe_tags             recipe_tags[]
+  categories              categories?               @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  cuisines                cuisines?                 @relation(fields: [cuisine_id], references: [id], onUpdate: NoAction)
+  meal_types              meal_types?               @relation(fields: [meal_type_id], references: [id], onUpdate: NoAction)
+}
+
+model tags {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  recipe_tags recipe_tags[]
+}
+
+model user_calorie_preferences {
+  user_id          String         @db.Uuid
+  calorie_range_id Int
+  calorie_ranges   calorie_ranges @relation(fields: [calorie_range_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, calorie_range_id])
+}
+
+model user_cooking_time_preferences {
+  user_id         String        @db.Uuid
+  cooking_time_id Int
+  cooking_times   cooking_times @relation(fields: [cooking_time_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, cooking_time_id])
+}
+
+model user_cuisine_preferences {
+  user_id    String   @db.Uuid
+  cuisine_id Int
+  cuisines   cuisines @relation(fields: [cuisine_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, cuisine_id])
+}
+
+model user_diet_preferences {
+  user_id            String           @db.Uuid
+  diet_preference_id Int
+  diet_preferences   diet_preferences @relation(fields: [diet_preference_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, diet_preference_id])
+}
+
+model user_health_goals {
+  user_id        String       @db.Uuid
+  health_goal_id Int
+  health_goals   health_goals @relation(fields: [health_goal_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, health_goal_id])
 }
