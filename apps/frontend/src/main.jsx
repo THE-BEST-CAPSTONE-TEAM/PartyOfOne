@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
+// import App from "./App.jsx";
 import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -24,12 +24,12 @@ const C = {
   sidebarBg: "#FBF6EC",
   card: "#FFFFFF",
   sand: "#F0E6D8",
-  line: "#E9DCC5",
+  line: "#154202",
   charcoal: "#2B2B2B",
   muted: "#8A7F6D",
   faint: "#B9AD98",
   primary: "#ff3131",
-  onPrimary: "#2B2B2B",
+  onPrimary: "#2a0c0c",
   green: "#154202",
   brightRed: "#ff3131",
 };

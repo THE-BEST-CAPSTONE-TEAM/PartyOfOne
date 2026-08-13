@@ -2,18 +2,59 @@ import { useEffect, useState } from "react";
 import { createItem, fetchCategories, fetchItems } from "./api/items.js";
 import ItemList from "./components/ItemList.jsx";
 
+import { C } from "./theme/tokens";
+import Sidebar from "./components/Sidebar";
+import ThisWeekScreen from "./components/ThisWeekScreen";
+import RecipeDetailModal from "./components/RecipeDetailModal";
+import LoginPage from "./components/LoginPage";
+
+export default function App() {
+  // Placeholder auth state. Replace with your real auth check (e.g. a token
+  // in localStorage, a session cookie check, or a call to your backend) once
+  // that exists — for now this just tracks whether LoginPage has been submitted.
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const [active, setActive] = useState("week");
+  const [recipeOpen, setRecipeOpen] = useState(false);
+
+  const handleLogin = ({ username, password }) => {
+    // TODO: replace with a real call to your backend, e.g.:
+    // const res = await fetch('/api/login', { method: 'POST', body: JSON.stringify({ username, password }) })
+    // For now, any non-empty username/password "logs in".
+    if (username.trim() && password.trim()) {
+      setIsLoggedIn(true);
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setActive("week");
+    setRecipeOpen(false);
+  };
+
+  if (!isLoggedIn) {
+    return <LoginPage onSubmit={handleLogin} />;
+  }
+
+  return (
+    <div className="flex w-full h-screen" style={{ background: C.bg }}>
+      <Sidebar active={active} onNavigate={setActive} onLogout={handleLogout} />
+
+      {/* Swap this for a router/switch once you add Recipes, Grocery List, Saved */}
+      {active === "week" && <ThisWeekScreen onOpenRecipe={() => setRecipeOpen(true)} />}
+
+      {recipeOpen && <RecipeDetailModal onClose={() => setRecipeOpen(false)} />}
+    </div>
+  );
+}
+
 const emptyForm = {
   name: "",
   description: "",
   categoryId: ""
 };
 
-export default function App() {
-  const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [form, setForm] = useState(emptyForm);
-  const [status, setStatus] = useState("Loading items...");
-
+// 
   useEffect(() => {
     async function loadData() {
       try {
@@ -122,4 +163,4 @@ export default function App() {
       </section>
     </main>
   );
-}
+
