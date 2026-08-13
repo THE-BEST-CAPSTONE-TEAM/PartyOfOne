@@ -11,6 +11,10 @@ const port = Number(process.env.PORT) || 3001;
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (_req, res) => {
+  res.json({ message: "PartyOfOne backend is running." });
+});
+
 app.use("/api", apiRoutes);
 
 app.use((err, _req, res, _next) => {
