@@ -1,7 +1,8 @@
-import "dotenv/config";
-import prisma from "../server/db/prisma.js";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
 async function main() {
+
   // ── LOOKUP TABLES ─────────────────────────────
   console.log("Seeding lookup tables...");
 
@@ -127,7 +128,8 @@ async function main() {
   ]);
 
   const [
-    italian, mexican, american, japanese, indian, mediterranean
+    italian, mexican, american, japanese,
+    indian, mediterranean, thai
   ] = await Promise.all([
     prisma.cuisines.findUnique({ where: { name: "Italian" } }),
     prisma.cuisines.findUnique({ where: { name: "Mexican" } }),
@@ -135,26 +137,30 @@ async function main() {
     prisma.cuisines.findUnique({ where: { name: "Japanese" } }),
     prisma.cuisines.findUnique({ where: { name: "Indian" } }),
     prisma.cuisines.findUnique({ where: { name: "Mediterranean" } }),
+    prisma.cuisines.findUnique({ where: { name: "Thai" } }),
   ]);
 
   const [
-    breakfastCat, lunchCat, dinnerCat, sideDishCat
+    breakfastCat, lunchCat, dinnerCat,
+    sideDishCat, soupCat
   ] = await Promise.all([
     prisma.categories.findUnique({ where: { name: "Breakfast" } }),
     prisma.categories.findUnique({ where: { name: "Lunch" } }),
     prisma.categories.findUnique({ where: { name: "Dinner" } }),
     prisma.categories.findUnique({ where: { name: "Side Dish" } }),
+    prisma.categories.findUnique({ where: { name: "Soup & Salad" } }),
   ]);
 
   const [
     tagQuick, tagVegetarian, tagVegan, tagGlutenFree,
-    tagMealPrep, tagHighProtein, tagLowCarb,
+    tagDairyFree, tagMealPrep, tagHighProtein, tagLowCarb,
     tagComfortFood, tagBudgetFriendly
   ] = await Promise.all([
     prisma.tags.findUnique({ where: { name: "quick" } }),
     prisma.tags.findUnique({ where: { name: "vegetarian" } }),
     prisma.tags.findUnique({ where: { name: "vegan" } }),
     prisma.tags.findUnique({ where: { name: "gluten-free" } }),
+    prisma.tags.findUnique({ where: { name: "dairy-free" } }),
     prisma.tags.findUnique({ where: { name: "meal-prep" } }),
     prisma.tags.findUnique({ where: { name: "high-protein" } }),
     prisma.tags.findUnique({ where: { name: "low-carb" } }),
@@ -163,8 +169,8 @@ async function main() {
   ]);
 
   const [
-    dietVegetarian, dietVegan, dietHighProtein,
-    dietGlutenFree, dietLowCarb, dietPescatarian
+    dietVegetarian, dietVegan, dietHighProtein, dietGlutenFree,
+    dietLowCarb, dietPescatarian, dietDairyFree
   ] = await Promise.all([
     prisma.diet_preferences.findUnique({ where: { name: "Vegetarian" } }),
     prisma.diet_preferences.findUnique({ where: { name: "Vegan" } }),
@@ -172,6 +178,7 @@ async function main() {
     prisma.diet_preferences.findUnique({ where: { name: "Gluten-Free" } }),
     prisma.diet_preferences.findUnique({ where: { name: "Low Carb" } }),
     prisma.diet_preferences.findUnique({ where: { name: "Pescatarian" } }),
+    prisma.diet_preferences.findUnique({ where: { name: "Dairy-Free" } }),
   ]);
 
   // ── RECIPES ───────────────────────────────────
@@ -501,7 +508,7 @@ async function main() {
   });
 
   // 7. Veggie Stir Fry
-  await prisma.recipes.create({
+  const stirFry = await prisma.recipes.create({
     data: {
       category_id: dinnerCat.id,
       cuisine_id: japanese.id,
@@ -608,7 +615,7 @@ async function main() {
   });
 
   // 9. Black Bean Tacos
-  await prisma.recipes.create({
+  const blackBeanTacos = await prisma.recipes.create({
     data: {
       category_id: lunchCat.id,
       cuisine_id: mexican.id,
@@ -660,15 +667,533 @@ async function main() {
     }
   });
 
+  // 10. Peanut Butter Banana Smoothie Bowl
+  const smoothieBowl = await prisma.recipes.create({
+    data: {
+      category_id: breakfastCat.id,
+      cuisine_id: american.id,
+      meal_type_id: breakfast.id,
+      name: "Peanut Butter Banana Smoothie Bowl",
+      description: "Thick and creamy vegan smoothie bowl topped with oats, blueberries and chia seeds.",
+      cook_time: 0,
+      prep_time: 10,
+      servings: 1,
+      calories_per_serving: 380,
+      difficulty: "easy",
+      is_public: true,
+      ingredients: {
+        create: [
+          { name: "Frozen banana", quantity: 1, unit: null, notes: "sliced before freezing" },
+          { name: "Peanut butter", quantity: 2, unit: "tbsp" },
+          { name: "Plant-based milk", quantity: 0.25, unit: "cup" },
+          { name: "Rolled oats", quantity: 0.25, unit: "cup", notes: "toasted, to top" },
+          { name: "Blueberries", quantity: 0.25, unit: "cup", notes: "to top" },
+          { name: "Chia seeds", quantity: 1, unit: "tsp", notes: "to top" },
+          { name: "Maple syrup", quantity: 1, unit: "tsp", notes: "optional" },
+        ]
+      },
+      preparation_steps: {
+        create: [
+          { step_number: 1, instruction: "Blend frozen banana, peanut butter and plant-based milk until thick and smooth." },
+          { step_number: 2, instruction: "Pour into a bowl — it should be thicker than a regular smoothie." },
+          { step_number: 3, instruction: "Top with toasted oats, blueberries and chia seeds." },
+          { step_number: 4, instruction: "Drizzle with maple syrup if desired and serve immediately." },
+        ]
+      },
+      recipe_tags: {
+        create: [
+          { tag_id: tagQuick.id },
+          { tag_id: tagVegan.id },
+          { tag_id: tagMealPrep.id },
+        ]
+      },
+      recipe_diet_preferences: {
+        create: [
+          { diet_preference_id: dietVegan.id },
+          { diet_preference_id: dietVegetarian.id },
+          { diet_preference_id: dietDairyFree.id },
+        ]
+      }
+    }
+  });
+
+  // 11. Avocado and Hummus Wrap
+  const hummusWrap = await prisma.recipes.create({
+    data: {
+      category_id: lunchCat.id,
+      cuisine_id: mediterranean.id,
+      meal_type_id: lunch.id,
+      name: "Avocado and Hummus Wrap",
+      description: "Fresh and filling vegan wrap with creamy hummus and avocado.",
+      cook_time: 0,
+      prep_time: 10,
+      servings: 1,
+      calories_per_serving: 420,
+      difficulty: "easy",
+      is_public: true,
+      ingredients: {
+        create: [
+          { name: "Whole wheat tortilla", quantity: 1, unit: null },
+          { name: "Hummus", quantity: 3, unit: "tbsp" },
+          { name: "Avocado", quantity: 0.5, unit: null, notes: "sliced" },
+          { name: "Cucumber", quantity: 0.5, unit: null, notes: "thinly sliced" },
+          { name: "Mixed salad greens", quantity: 1, unit: "cup" },
+          { name: "Cherry tomatoes", quantity: 6, unit: null, notes: "halved" },
+          { name: "Red onion", quantity: 0.25, unit: null, notes: "thinly sliced" },
+          { name: "Lemon juice", quantity: 1, unit: "tsp" },
+          { name: "Salt", quantity: null, unit: null, notes: "to taste" },
+          { name: "Black pepper", quantity: null, unit: null, notes: "to taste" },
+        ]
+      },
+      preparation_steps: {
+        create: [
+          { step_number: 1, instruction: "Lay the tortilla flat and spread hummus evenly over the surface." },
+          { step_number: 2, instruction: "Layer avocado, cucumber, salad greens, tomatoes and red onion on one half." },
+          { step_number: 3, instruction: "Squeeze lemon juice over the fillings and season with salt and pepper." },
+          { step_number: 4, instruction: "Fold in the sides and roll tightly, slice in half and serve." },
+        ]
+      },
+      recipe_tags: {
+        create: [
+          { tag_id: tagQuick.id },
+          { tag_id: tagVegan.id },
+          { tag_id: tagBudgetFriendly.id },
+        ]
+      },
+      recipe_diet_preferences: {
+        create: [
+          { diet_preference_id: dietVegan.id },
+          { diet_preference_id: dietVegetarian.id },
+          { diet_preference_id: dietDairyFree.id },
+        ]
+      }
+    }
+  });
+
+  // 12. Lentil Soup
+  const lentilSoup = await prisma.recipes.create({
+    data: {
+      category_id: soupCat.id,
+      cuisine_id: mediterranean.id,
+      meal_type_id: lunch.id,
+      name: "Lentil Soup",
+      description: "Hearty and warming vegan lentil soup with Mediterranean spices.",
+      cook_time: 35,
+      prep_time: 10,
+      servings: 1,
+      calories_per_serving: 320,
+      difficulty: "easy",
+      is_public: true,
+      ingredients: {
+        create: [
+          { name: "Red lentils", quantity: 0.5, unit: "cup", notes: "rinsed" },
+          { name: "Vegetable broth", quantity: 500, unit: "ml" },
+          { name: "Onion", quantity: 0.5, unit: null, notes: "diced" },
+          { name: "Garlic", quantity: 2, unit: "cloves", notes: "minced" },
+          { name: "Carrot", quantity: 1, unit: null, notes: "diced" },
+          { name: "Celery", quantity: 1, unit: "stalk", notes: "diced" },
+          { name: "Cumin", quantity: 1, unit: "tsp" },
+          { name: "Smoked paprika", quantity: 0.5, unit: "tsp" },
+          { name: "Turmeric", quantity: 0.25, unit: "tsp" },
+          { name: "Olive oil", quantity: 1, unit: "tbsp" },
+          { name: "Lemon juice", quantity: 1, unit: "tbsp" },
+          { name: "Salt", quantity: null, unit: null, notes: "to taste" },
+          { name: "Black pepper", quantity: null, unit: null, notes: "to taste" },
+          { name: "Fresh parsley", quantity: null, unit: null, notes: "to garnish" },
+        ]
+      },
+      preparation_steps: {
+        create: [
+          { step_number: 1, instruction: "Heat olive oil in a pot over medium heat, add onion, carrot and celery and cook for 5 minutes." },
+          { step_number: 2, instruction: "Add garlic, cumin, paprika and turmeric and stir for 1 minute." },
+          { step_number: 3, instruction: "Add lentils and vegetable broth and bring to a boil." },
+          { step_number: 4, instruction: "Reduce heat and simmer for 25 minutes until lentils are soft and beginning to break down." },
+          { step_number: 5, instruction: "Stir in lemon juice, season with salt and pepper." },
+          { step_number: 6, instruction: "Serve garnished with fresh parsley." },
+        ]
+      },
+      recipe_tags: {
+        create: [
+          { tag_id: tagVegan.id },
+          { tag_id: tagBudgetFriendly.id },
+          { tag_id: tagMealPrep.id },
+          { tag_id: tagComfortFood.id },
+          { tag_id: tagGlutenFree.id },
+        ]
+      },
+      recipe_diet_preferences: {
+        create: [
+          { diet_preference_id: dietVegan.id },
+          { diet_preference_id: dietVegetarian.id },
+          { diet_preference_id: dietGlutenFree.id },
+          { diet_preference_id: dietDairyFree.id },
+        ]
+      }
+    }
+  });
+
+  // 13. Chickpea Curry
+  const chickpeaCurry = await prisma.recipes.create({
+    data: {
+      category_id: dinnerCat.id,
+      cuisine_id: indian.id,
+      meal_type_id: dinner.id,
+      name: "Chickpea Curry",
+      description: "Simple and flavourful vegan chickpea curry with coconut milk.",
+      cook_time: 25,
+      prep_time: 10,
+      servings: 1,
+      calories_per_serving: 460,
+      difficulty: "easy",
+      is_public: true,
+      ingredients: {
+        create: [
+          { name: "Chickpeas", quantity: 200, unit: "g", notes: "drained and rinsed" },
+          { name: "Crushed tomatoes", quantity: 150, unit: "g" },
+          { name: "Coconut milk", quantity: 100, unit: "ml" },
+          { name: "Onion", quantity: 0.5, unit: null, notes: "diced" },
+          { name: "Garlic", quantity: 2, unit: "cloves", notes: "minced" },
+          { name: "Ginger", quantity: 1, unit: "tsp", notes: "grated" },
+          { name: "Curry powder", quantity: 1.5, unit: "tsp" },
+          { name: "Cumin", quantity: 0.5, unit: "tsp" },
+          { name: "Turmeric", quantity: 0.25, unit: "tsp" },
+          { name: "Vegetable oil", quantity: 1, unit: "tbsp" },
+          { name: "Basmati rice", quantity: 0.5, unit: "cup", notes: "to serve" },
+          { name: "Fresh coriander", quantity: null, unit: null, notes: "to garnish" },
+          { name: "Salt", quantity: null, unit: null, notes: "to taste" },
+        ]
+      },
+      preparation_steps: {
+        create: [
+          { step_number: 1, instruction: "Cook basmati rice according to package instructions." },
+          { step_number: 2, instruction: "Heat oil in a pan over medium heat, add onion and cook for 5 minutes until golden." },
+          { step_number: 3, instruction: "Add garlic, ginger, curry powder, cumin and turmeric and stir for 1 minute." },
+          { step_number: 4, instruction: "Add crushed tomatoes and simmer for 5 minutes." },
+          { step_number: 5, instruction: "Add chickpeas and coconut milk, stir well and simmer for 15 minutes." },
+          { step_number: 6, instruction: "Season with salt, serve over rice garnished with fresh coriander." },
+        ]
+      },
+      recipe_tags: {
+        create: [
+          { tag_id: tagVegan.id },
+          { tag_id: tagBudgetFriendly.id },
+          { tag_id: tagComfortFood.id },
+          { tag_id: tagGlutenFree.id },
+        ]
+      },
+      recipe_diet_preferences: {
+        create: [
+          { diet_preference_id: dietVegan.id },
+          { diet_preference_id: dietVegetarian.id },
+          { diet_preference_id: dietGlutenFree.id },
+          { diet_preference_id: dietDairyFree.id },
+        ]
+      }
+    }
+  });
+
+  // 14. Mushroom and Spinach Pasta
+  const mushroomPasta = await prisma.recipes.create({
+    data: {
+      category_id: dinnerCat.id,
+      cuisine_id: italian.id,
+      meal_type_id: dinner.id,
+      name: "Mushroom and Spinach Pasta",
+      description: "Simple vegan pasta with golden mushrooms, wilted spinach and a savoury sauce.",
+      cook_time: 20,
+      prep_time: 10,
+      servings: 1,
+      calories_per_serving: 480,
+      difficulty: "easy",
+      is_public: true,
+      ingredients: {
+        create: [
+          { name: "Pasta", quantity: 100, unit: "g", notes: "spaghetti or penne" },
+          { name: "Mushrooms", quantity: 150, unit: "g", notes: "sliced" },
+          { name: "Baby spinach", quantity: 2, unit: "cups" },
+          { name: "Garlic", quantity: 3, unit: "cloves", notes: "minced" },
+          { name: "Olive oil", quantity: 2, unit: "tbsp" },
+          { name: "Vegetable broth", quantity: 60, unit: "ml" },
+          { name: "Nutritional yeast", quantity: 2, unit: "tbsp", notes: "adds cheesy flavor" },
+          { name: "Red pepper flakes", quantity: 0.5, unit: "tsp" },
+          { name: "Lemon juice", quantity: 1, unit: "tsp" },
+          { name: "Salt", quantity: null, unit: null, notes: "to taste" },
+          { name: "Black pepper", quantity: null, unit: null, notes: "to taste" },
+          { name: "Fresh parsley", quantity: null, unit: null, notes: "to garnish" },
+        ]
+      },
+      preparation_steps: {
+        create: [
+          { step_number: 1, instruction: "Cook pasta according to package instructions, reserve 0.25 cup of pasta water before draining." },
+          { step_number: 2, instruction: "Heat olive oil in a pan over medium-high heat, add mushrooms and cook undisturbed for 3 minutes until golden." },
+          { step_number: 3, instruction: "Add garlic and red pepper flakes and cook for 1 minute." },
+          { step_number: 4, instruction: "Add spinach and vegetable broth and toss until spinach wilts." },
+          { step_number: 5, instruction: "Add drained pasta, nutritional yeast and a splash of pasta water, toss to coat." },
+          { step_number: 6, instruction: "Finish with lemon juice, season with salt and pepper and garnish with parsley." },
+        ]
+      },
+      recipe_tags: {
+        create: [
+          { tag_id: tagVegan.id },
+          { tag_id: tagQuick.id },
+          { tag_id: tagComfortFood.id },
+          { tag_id: tagBudgetFriendly.id },
+        ]
+      },
+      recipe_diet_preferences: {
+        create: [
+          { diet_preference_id: dietVegan.id },
+          { diet_preference_id: dietVegetarian.id },
+          { diet_preference_id: dietDairyFree.id },
+        ]
+      }
+    }
+  });
+
+  // 15. Tofu Scramble
+  const tofuScramble = await prisma.recipes.create({
+    data: {
+      category_id: breakfastCat.id,
+      cuisine_id: american.id,
+      meal_type_id: breakfast.id,
+      name: "Tofu Scramble",
+      description: "Protein packed vegan breakfast scramble with tofu and fresh vegetables.",
+      cook_time: 10,
+      prep_time: 5,
+      servings: 1,
+      calories_per_serving: 290,
+      difficulty: "easy",
+      is_public: true,
+      ingredients: {
+        create: [
+          { name: "Firm tofu", quantity: 150, unit: "g", notes: "pressed and crumbled" },
+          { name: "Bell pepper", quantity: 0.5, unit: null, notes: "diced" },
+          { name: "Onion", quantity: 0.25, unit: null, notes: "diced" },
+          { name: "Garlic", quantity: 1, unit: "clove", notes: "minced" },
+          { name: "Turmeric", quantity: 0.25, unit: "tsp", notes: "gives egg-like color" },
+          { name: "Cumin", quantity: 0.5, unit: "tsp" },
+          { name: "Smoked paprika", quantity: 0.5, unit: "tsp" },
+          { name: "Nutritional yeast", quantity: 1, unit: "tbsp" },
+          { name: "Olive oil", quantity: 1, unit: "tbsp" },
+          { name: "Salt", quantity: null, unit: null, notes: "to taste" },
+          { name: "Black pepper", quantity: null, unit: null, notes: "to taste" },
+          { name: "Fresh chives", quantity: null, unit: null, notes: "to garnish" },
+        ]
+      },
+      preparation_steps: {
+        create: [
+          { step_number: 1, instruction: "Heat olive oil in a pan over medium heat, add onion and bell pepper and cook for 3 minutes." },
+          { step_number: 2, instruction: "Add garlic and cook for 30 seconds." },
+          { step_number: 3, instruction: "Add crumbled tofu and stir to combine with the vegetables." },
+          { step_number: 4, instruction: "Add turmeric, cumin, paprika and nutritional yeast, stir well to coat the tofu evenly." },
+          { step_number: 5, instruction: "Cook for 5 minutes stirring occasionally until tofu is lightly golden." },
+          { step_number: 6, instruction: "Season with salt and pepper, garnish with chives and serve immediately." },
+        ]
+      },
+      recipe_tags: {
+        create: [
+          { tag_id: tagQuick.id },
+          { tag_id: tagVegan.id },
+          { tag_id: tagHighProtein.id },
+          { tag_id: tagGlutenFree.id },
+        ]
+      },
+      recipe_diet_preferences: {
+        create: [
+          { diet_preference_id: dietVegan.id },
+          { diet_preference_id: dietVegetarian.id },
+          { diet_preference_id: dietGlutenFree.id },
+          { diet_preference_id: dietDairyFree.id },
+          { diet_preference_id: dietHighProtein.id },
+        ]
+      }
+    }
+  });
+
+  // 16. Thai Peanut Noodles
+  const thaiNoodles = await prisma.recipes.create({
+    data: {
+      category_id: dinnerCat.id,
+      cuisine_id: thai.id,
+      meal_type_id: dinner.id,
+      name: "Thai Peanut Noodles",
+      description: "Flavourful vegan rice noodles tossed in a creamy peanut sauce with fresh vegetables.",
+      cook_time: 15,
+      prep_time: 10,
+      servings: 1,
+      calories_per_serving: 520,
+      difficulty: "easy",
+      is_public: true,
+      ingredients: {
+        create: [
+          { name: "Rice noodles", quantity: 100, unit: "g" },
+          { name: "Peanut butter", quantity: 2, unit: "tbsp" },
+          { name: "Soy sauce", quantity: 2, unit: "tbsp" },
+          { name: "Lime juice", quantity: 1, unit: "tbsp" },
+          { name: "Maple syrup", quantity: 1, unit: "tsp" },
+          { name: "Sesame oil", quantity: 1, unit: "tsp" },
+          { name: "Garlic", quantity: 1, unit: "clove", notes: "minced" },
+          { name: "Ginger", quantity: 0.5, unit: "tsp", notes: "grated" },
+          { name: "Carrot", quantity: 0.5, unit: null, notes: "julienned" },
+          { name: "Cucumber", quantity: 0.5, unit: null, notes: "julienned" },
+          { name: "Green onions", quantity: 2, unit: null, notes: "sliced" },
+          { name: "Crushed peanuts", quantity: 1, unit: "tbsp", notes: "to garnish" },
+          { name: "Red pepper flakes", quantity: 0.25, unit: "tsp", notes: "to taste" },
+        ]
+      },
+      preparation_steps: {
+        create: [
+          { step_number: 1, instruction: "Cook rice noodles according to package instructions, drain and rinse with cold water." },
+          { step_number: 2, instruction: "Whisk together peanut butter, soy sauce, lime juice, maple syrup, sesame oil, garlic and ginger until smooth." },
+          { step_number: 3, instruction: "Add a splash of warm water if the sauce is too thick." },
+          { step_number: 4, instruction: "Toss noodles with peanut sauce, carrot and cucumber." },
+          { step_number: 5, instruction: "Top with green onions, crushed peanuts and red pepper flakes and serve at room temperature." },
+        ]
+      },
+      recipe_tags: {
+        create: [
+          { tag_id: tagVegan.id },
+          { tag_id: tagQuick.id },
+          { tag_id: tagBudgetFriendly.id },
+          { tag_id: tagComfortFood.id },
+        ]
+      },
+      recipe_diet_preferences: {
+        create: [
+          { diet_preference_id: dietVegan.id },
+          { diet_preference_id: dietVegetarian.id },
+          { diet_preference_id: dietDairyFree.id },
+        ]
+      }
+    }
+  });
+
+  console.log("✅ Recipes seeded!");
+
+  // ── VEGAN MEAL PLAN ───────────────────────────
+  console.log("Seeding vegan meal plan...");
+
+  const testUserId = "00000000-0000-0000-0000-000000000001";
+
+  await prisma.profiles.upsert({
+    where: { id: testUserId },
+    update: {},
+    create: {
+      id: testUserId,
+      email: "test@example.com",
+      display_name: "Test User",
+    }
+  });
+
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  monday.setHours(0, 0, 0, 0);
+
+  const mealPlan = await prisma.meal_plans.create({
+    data: {
+      user_id: testUserId,
+      week_start: monday,
+      meal_plan_entries: {
+        create: [
+          // Monday
+          { recipe_id: tofuScramble.id, day_of_week: "monday", meal_time: "breakfast", servings: 1 },
+          { recipe_id: hummusWrap.id, day_of_week: "monday", meal_time: "lunch", servings: 1 },
+          { recipe_id: chickpeaCurry.id, day_of_week: "monday", meal_time: "dinner", servings: 1 },
+          // Tuesday
+          { recipe_id: smoothieBowl.id, day_of_week: "tuesday", meal_time: "breakfast", servings: 1 },
+          { recipe_id: lentilSoup.id, day_of_week: "tuesday", meal_time: "lunch", servings: 1 },
+          { recipe_id: stirFry.id, day_of_week: "tuesday", meal_time: "dinner", servings: 1 },
+          // Wednesday
+          { recipe_id: tofuScramble.id, day_of_week: "wednesday", meal_time: "breakfast", servings: 1 },
+          { recipe_id: blackBeanTacos.id, day_of_week: "wednesday", meal_time: "lunch", servings: 1 },
+          { recipe_id: mushroomPasta.id, day_of_week: "wednesday", meal_time: "dinner", servings: 1 },
+          // Thursday
+          { recipe_id: smoothieBowl.id, day_of_week: "thursday", meal_time: "breakfast", servings: 1 },
+          { recipe_id: hummusWrap.id, day_of_week: "thursday", meal_time: "lunch", servings: 1 },
+          { recipe_id: thaiNoodles.id, day_of_week: "thursday", meal_time: "dinner", servings: 1 },
+          // Friday
+          { recipe_id: tofuScramble.id, day_of_week: "friday", meal_time: "breakfast", servings: 1 },
+          { recipe_id: lentilSoup.id, day_of_week: "friday", meal_time: "lunch", servings: 1 },
+          { recipe_id: chickpeaCurry.id, day_of_week: "friday", meal_time: "dinner", servings: 1 },
+          // Saturday
+          { recipe_id: smoothieBowl.id, day_of_week: "saturday", meal_time: "breakfast", servings: 1 },
+          { recipe_id: blackBeanTacos.id, day_of_week: "saturday", meal_time: "lunch", servings: 1 },
+          { recipe_id: stirFry.id, day_of_week: "saturday", meal_time: "dinner", servings: 1 },
+          // Sunday
+          { recipe_id: tofuScramble.id, day_of_week: "sunday", meal_time: "breakfast", servings: 1 },
+          { recipe_id: hummusWrap.id, day_of_week: "sunday", meal_time: "lunch", servings: 1 },
+          { recipe_id: mushroomPasta.id, day_of_week: "sunday", meal_time: "dinner", servings: 1 },
+        ]
+      }
+    }
+  });
+
+  // ── GROCERY LIST ──────────────────────────────
+  console.log("Seeding grocery list...");
+
+  await prisma.grocery_lists.create({
+    data: {
+      meal_plan_id: mealPlan.id,
+      grocery_list_items: {
+        create: [
+          { ingredient_name: "Firm tofu", total_quantity: 600, unit: "g" },
+          { ingredient_name: "Frozen banana", total_quantity: 4, unit: null },
+          { ingredient_name: "Peanut butter", total_quantity: 10, unit: "tbsp" },
+          { ingredient_name: "Plant-based milk", total_quantity: 1, unit: "cup" },
+          { ingredient_name: "Rolled oats", total_quantity: 1, unit: "cup" },
+          { ingredient_name: "Blueberries", total_quantity: 1, unit: "cup" },
+          { ingredient_name: "Chia seeds", total_quantity: 4, unit: "tsp" },
+          { ingredient_name: "Whole wheat tortillas", total_quantity: 3, unit: null },
+          { ingredient_name: "Hummus", total_quantity: 9, unit: "tbsp" },
+          { ingredient_name: "Avocado", total_quantity: 1.5, unit: null },
+          { ingredient_name: "Red lentils", total_quantity: 1, unit: "cup" },
+          { ingredient_name: "Vegetable broth", total_quantity: 1060, unit: "ml" },
+          { ingredient_name: "Chickpeas", total_quantity: 400, unit: "g" },
+          { ingredient_name: "Crushed tomatoes", total_quantity: 300, unit: "g" },
+          { ingredient_name: "Coconut milk", total_quantity: 200, unit: "ml" },
+          { ingredient_name: "Pasta", total_quantity: 200, unit: "g" },
+          { ingredient_name: "Mushrooms", total_quantity: 300, unit: "g" },
+          { ingredient_name: "Baby spinach", total_quantity: 4, unit: "cups" },
+          { ingredient_name: "Nutritional yeast", total_quantity: 5, unit: "tbsp" },
+          { ingredient_name: "Rice noodles", total_quantity: 200, unit: "g" },
+          { ingredient_name: "Corn tortillas", total_quantity: 6, unit: null },
+          { ingredient_name: "Black beans", total_quantity: 400, unit: "g" },
+          { ingredient_name: "Jasmine rice", total_quantity: 1, unit: "cup" },
+          { ingredient_name: "Basmati rice", total_quantity: 1, unit: "cup" },
+          { ingredient_name: "Garlic", total_quantity: 20, unit: "cloves" },
+          { ingredient_name: "Onion", total_quantity: 3, unit: null },
+          { ingredient_name: "Ginger", total_quantity: 3, unit: "tsp" },
+          { ingredient_name: "Bell pepper", total_quantity: 2, unit: null },
+          { ingredient_name: "Carrot", total_quantity: 2, unit: null },
+          { ingredient_name: "Cucumber", total_quantity: 2, unit: null },
+          { ingredient_name: "Cherry tomatoes", total_quantity: 24, unit: null },
+          { ingredient_name: "Mixed salad greens", total_quantity: 3, unit: "cups" },
+          { ingredient_name: "Green onions", total_quantity: 4, unit: null },
+          { ingredient_name: "Lime", total_quantity: 2, unit: null },
+          { ingredient_name: "Lemon", total_quantity: 2, unit: null },
+          { ingredient_name: "Olive oil", total_quantity: 6, unit: "tbsp" },
+          { ingredient_name: "Soy sauce", total_quantity: 6, unit: "tbsp" },
+          { ingredient_name: "Sesame oil", total_quantity: 3, unit: "tsp" },
+          { ingredient_name: "Cumin", total_quantity: 4, unit: "tsp" },
+          { ingredient_name: "Smoked paprika", total_quantity: 2, unit: "tsp" },
+          { ingredient_name: "Turmeric", total_quantity: 1, unit: "tsp" },
+          { ingredient_name: "Curry powder", total_quantity: 3, unit: "tsp" },
+          { ingredient_name: "Red pepper flakes", total_quantity: 1.5, unit: "tsp" },
+          { ingredient_name: "Crushed peanuts", total_quantity: 2, unit: "tbsp" },
+          { ingredient_name: "Maple syrup", total_quantity: 3, unit: "tsp" },
+          { ingredient_name: "Fresh coriander", total_quantity: null, unit: null, notes: "to garnish" },
+          { ingredient_name: "Fresh parsley", total_quantity: null, unit: null, notes: "to garnish" },
+          { ingredient_name: "Fresh chives", total_quantity: null, unit: null, notes: "to garnish" },
+        ]
+      }
+    }
+  });
+
   console.log("✅ All done!");
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (error) => {
-    console.error(error);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

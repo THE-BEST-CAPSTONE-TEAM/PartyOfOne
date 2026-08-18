@@ -8,9 +8,14 @@ dotenv.config();
 const app = express();
 const port = Number(process.env.PORT) || 3001;
 
-app.use(cors());
-app.use(express.json());
+// ✅ Single cors config, before everything else
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
+  credentials: true,
+}));
 
+app.use(express.json());
 app.use("/api", apiRoutes);
 
 app.use((err, _req, res, _next) => {
