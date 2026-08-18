@@ -27,6 +27,7 @@ model change_log {
   changed_by_email String
   changed_at       DateTime? @default(now()) @db.Timestamp(6)
   changes          Json
+  profiles         profiles? @relation(fields: [changed_by], references: [id], onUpdate: NoAction)
   recipes          recipes?  @relation(fields: [recipe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
@@ -114,6 +115,7 @@ model meal_plans {
   updated_at        DateTime?           @default(now()) @db.Timestamp(6)
   grocery_lists     grocery_lists?
   meal_plan_entries meal_plan_entries[]
+  profiles          profiles            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, week_start], map: "unique_user_week")
 }
@@ -134,10 +136,20 @@ model preparation_steps {
 }
 
 model profiles {
-  id           String    @id @db.Uuid
-  email        String
-  display_name String?
-  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  id                                   String                          @id @db.Uuid
+  email                                String
+  display_name                         String?
+  created_at                           DateTime?                       @default(now()) @db.Timestamp(6)
+  change_log                           change_log[]
+  meal_plans                           meal_plans[]
+  recipes_recipes_updated_byToprofiles recipes[]                       @relation("recipes_updated_byToprofiles")
+  recipes_recipes_user_idToprofiles    recipes[]                       @relation("recipes_user_idToprofiles")
+  saved_recipes                        saved_recipes[]
+  user_calorie_preferences             user_calorie_preferences[]
+  user_cooking_time_preferences        user_cooking_time_preferences[]
+  user_cuisine_preferences             user_cuisine_preferences[]
+  user_diet_preferences                user_diet_preferences[]
+  user_health_goals                    user_health_goals[]
 }
 
 model recipe_diet_preferences {
@@ -160,33 +172,36 @@ model recipe_tags {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model recipes {
-  id                      BigInt                    @id @default(autoincrement())
-  user_id                 String?                   @db.Uuid
-  category_id             Int?
-  cuisine_id              Int?
-  meal_type_id            Int?
-  name                    String
-  description             String?
-  cook_time               Int?
-  prep_time               Int?
-  servings                Int?                      @default(1)
-  calories_per_serving    Int?
-  difficulty              String?
-  notes                   String?
-  is_public               Boolean?                  @default(false)
-  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
-  updated_at              DateTime?                 @default(now()) @db.Timestamp(6)
-  updated_by              String?                   @db.Uuid
-  updated_by_email        String?
-  change_log              change_log[]
-  ingredients             ingredients[]
-  meal_plan_entries       meal_plan_entries[]
-  preparation_steps       preparation_steps[]
-  recipe_diet_preferences recipe_diet_preferences[]
-  recipe_tags             recipe_tags[]
-  categories              categories?               @relation(fields: [category_id], references: [id], onUpdate: NoAction)
-  cuisines                cuisines?                 @relation(fields: [cuisine_id], references: [id], onUpdate: NoAction)
-  meal_types              meal_types?               @relation(fields: [meal_type_id], references: [id], onUpdate: NoAction)
+  id                                    BigInt                    @id @default(autoincrement())
+  user_id                               String?                   @db.Uuid
+  category_id                           Int?
+  cuisine_id                            Int?
+  meal_type_id                          Int?
+  name                                  String
+  description                           String?
+  cook_time                             Int?
+  prep_time                             Int?
+  servings                              Int?                      @default(1)
+  calories_per_serving                  Int?
+  difficulty                            String?
+  notes                                 String?
+  is_public                             Boolean?                  @default(false)
+  created_at                            DateTime?                 @default(now()) @db.Timestamp(6)
+  updated_at                            DateTime?                 @default(now()) @db.Timestamp(6)
+  updated_by                            String?                   @db.Uuid
+  updated_by_email                      String?
+  change_log                            change_log[]
+  ingredients                           ingredients[]
+  meal_plan_entries                     meal_plan_entries[]
+  preparation_steps                     preparation_steps[]
+  recipe_diet_preferences               recipe_diet_preferences[]
+  recipe_tags                           recipe_tags[]
+  categories                            categories?               @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  cuisines                              cuisines?                 @relation(fields: [cuisine_id], references: [id], onUpdate: NoAction)
+  meal_types                            meal_types?               @relation(fields: [meal_type_id], references: [id], onUpdate: NoAction)
+  profiles_recipes_updated_byToprofiles profiles?                 @relation("recipes_updated_byToprofiles", fields: [updated_by], references: [id], onUpdate: NoAction)
+  profiles_recipes_user_idToprofiles    profiles?                 @relation("recipes_user_idToprofiles", fields: [user_id], references: [id], onUpdate: NoAction)
+  saved_recipes                         saved_recipes[]
 }
 
 model tags {
@@ -199,6 +214,7 @@ model user_calorie_preferences {
   user_id          String         @db.Uuid
   calorie_range_id Int
   calorie_ranges   calorie_ranges @relation(fields: [calorie_range_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles         profiles       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([user_id, calorie_range_id])
 }
@@ -207,6 +223,7 @@ model user_cooking_time_preferences {
   user_id         String        @db.Uuid
   cooking_time_id Int
   cooking_times   cooking_times @relation(fields: [cooking_time_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles        profiles      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([user_id, cooking_time_id])
 }
@@ -215,6 +232,7 @@ model user_cuisine_preferences {
   user_id    String   @db.Uuid
   cuisine_id Int
   cuisines   cuisines @relation(fields: [cuisine_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles   profiles @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([user_id, cuisine_id])
 }
@@ -223,6 +241,7 @@ model user_diet_preferences {
   user_id            String           @db.Uuid
   diet_preference_id Int
   diet_preferences   diet_preferences @relation(fields: [diet_preference_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles           profiles         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([user_id, diet_preference_id])
 }
@@ -231,6 +250,19 @@ model user_health_goals {
   user_id        String       @db.Uuid
   health_goal_id Int
   health_goals   health_goals @relation(fields: [health_goal_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles       profiles     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([user_id, health_goal_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model saved_recipes {
+  id        BigInt    @id @default(autoincrement())
+  user_id   String    @db.Uuid
+  recipe_id BigInt
+  saved_at  DateTime? @default(now()) @db.Timestamp(6)
+  recipes   recipes   @relation(fields: [recipe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles  profiles  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, recipe_id], map: "unique_user_recipe")
 }
