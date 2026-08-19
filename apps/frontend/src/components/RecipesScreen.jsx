@@ -40,9 +40,18 @@ const MEAL_TIMES = ["breakfast", "lunch", "dinner", "snack"];
 
 // ── Add to Week Modal ─────────────────────────
 
-function AddToWeekModal({ recipe, userId, onClose, onAdded }) {
-  const [selectedDay, setSelectedDay] = useState(DAYS[0]);
-  const [selectedMealTime, setSelectedMealTime] = useState(MEAL_TIMES[0]);
+function AddToWeekModal({
+  recipe,
+  userId,
+  defaultDay,
+  defaultMealTime,
+  onClose,
+  onAdded,
+}) {
+  const [selectedDay, setSelectedDay] = useState(defaultDay || DAYS[0]);
+  const [selectedMealTime, setSelectedMealTime] = useState(
+    defaultMealTime || MEAL_TIMES[0],
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,16 +71,17 @@ function AddToWeekModal({ recipe, userId, onClose, onAdded }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="absolute inset-0 z-30 flex items-center justify-center"
       style={{ background: "rgba(43,43,43,0.5)" }}
       onClick={onClose}
     >
       <div
-        className="rounded-2xl p-6 w-80 shadow-2xl"
-        style={{ background: C.card }}
+        className="rounded-2xl p-5 w-80 shadow-2xl overflow-y-auto"
+        style={{ background: C.card, maxHeight: "85vh" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
           <h3
             className="text-base font-semibold"
             style={{ ...serif, color: C.charcoal }}
@@ -83,18 +93,21 @@ function AddToWeekModal({ recipe, userId, onClose, onAdded }) {
           </button>
         </div>
 
-        <p className="text-xs mb-4" style={{ ...sans, color: C.muted }}>
-          Adding <strong style={{ color: C.charcoal }}>{recipe.name}</strong>
-        </p>
+        {/* Recipe name */}
+        {recipe?.name && (
+          <p className="text-xs mb-3" style={{ ...sans, color: C.muted }}>
+            Adding <strong style={{ color: C.charcoal }}>{recipe.name}</strong>
+          </p>
+        )}
 
         {/* Day picker */}
         <p
-          className="text-xs font-semibold mb-2 uppercase tracking-widest"
+          className="text-xs font-semibold mb-1.5 uppercase tracking-widest"
           style={{ ...sans, color: C.faint }}
         >
           Day
         </p>
-        <div className="grid grid-cols-7 gap-1 mb-4">
+        <div className="grid grid-cols-7 gap-1 mb-3">
           {DAYS.map((day, i) => (
             <button
               key={day}
@@ -113,24 +126,24 @@ function AddToWeekModal({ recipe, userId, onClose, onAdded }) {
 
         {/* Meal time picker */}
         <p
-          className="text-xs font-semibold mb-2 uppercase tracking-widest"
+          className="text-xs font-semibold mb-1.5 uppercase tracking-widest"
           style={{ ...sans, color: C.faint }}
         >
           Meal
         </p>
-        <div className="grid grid-cols-2 gap-2 mb-5">
+        <div className="grid grid-cols-2 gap-2 mb-4">
           {MEAL_TIMES.map((mt) => (
             <button
               key={mt}
               onClick={() => setSelectedMealTime(mt)}
-              className="py-2 rounded-xl text-xs font-semibold capitalize transition-colors"
+              className="py-2 rounded-xl text-xs font-semibold capitalize transition-colors flex items-center justify-center gap-1"
               style={{
                 ...sans,
                 background: selectedMealTime === mt ? C.charcoal : C.sand,
                 color: selectedMealTime === mt ? "#FFFBF5" : C.muted,
               }}
             >
-              {mt}
+              {MEAL_META[mt]?.emoji} {mt}
             </button>
           ))}
         </div>

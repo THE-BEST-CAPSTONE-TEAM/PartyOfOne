@@ -1,5 +1,13 @@
 import React from "react";
-import { Calendar, BookOpen, ShoppingBasket, Heart, Settings, ChefHat, LogOut } from "lucide-react";
+import {
+  Calendar,
+  BookOpen,
+  ShoppingBasket,
+  Heart,
+  Settings,
+  ChefHat,
+  LogOut,
+} from "lucide-react";
 import { C, serif, sans } from "../theme/tokens";
 
 const NAV_ITEMS = [
@@ -13,7 +21,11 @@ export default function Sidebar({ active, onNavigate, onLogout }) {
   return (
     <div
       className="flex flex-col gap-1 py-6 px-4 flex-shrink-0"
-      style={{ width: 210, background: C.sidebarBg, borderRight: `1px solid ${C.line}` }}
+      style={{
+        width: 210,
+        background: C.sidebarBg,
+        borderRight: `1px solid ${C.line}`,
+      }}
     >
       <div className="flex items-center gap-2 px-2 mb-1">
         <div
@@ -22,11 +34,14 @@ export default function Sidebar({ active, onNavigate, onLogout }) {
         >
           <ChefHat size={16} color={C.onPrimary} />
         </div>
-        <span className="text-base font-semibold" style={{ ...serif, fontWeight: 600, color: C.charcoal }}>
+        {/* <span className="text-base font-semibold" style={{ ...serif, fontWeight: 600, color: C.charcoal }}>
           Table
-        </span>
+        </span> */}
       </div>
-      <p className="px-2 text-[11px] leading-snug mb-6" style={{ ...sans, color: C.muted }}>
+      <p
+        className="px-2 text-[11px] leading-snug mb-6"
+        style={{ ...sans, color: C.muted }}
+      >
         Stop negotiating with your fridge.
       </p>
 
@@ -48,7 +63,10 @@ export default function Sidebar({ active, onNavigate, onLogout }) {
       ))}
 
       <div className="flex-1" />
-      <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm" style={{ ...sans, color: C.muted }}>
+      <button
+        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm"
+        style={{ ...sans, color: C.muted }}
+      >
         <Settings size={16} />
         Settings
       </button>

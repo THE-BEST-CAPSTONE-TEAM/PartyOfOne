@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Calendar,
   BookOpen,
@@ -48,7 +48,23 @@ const DAYS = [
   "sunday",
 ];
 const DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-const MEAL_TIMES = ["breakfast", "lunch", "dinner", "snack"];
+const MEAL_TIMES = [
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+  "dessert",
+  "drinks",
+];
+
+const MEAL_META = {
+  breakfast: { label: "Breakfast", emoji: "🍳", order: 0 },
+  lunch: { label: "Lunch", emoji: "🥪", order: 1 },
+  dinner: { label: "Dinner", emoji: "🍝", order: 2 },
+  snack: { label: "Snack", emoji: "🍎", order: 3 },
+  dessert: { label: "Dessert", emoji: "🍰", order: 4 },
+  drinks: { label: "Drinks", emoji: "☕", order: 5 },
+};
 
 // ── Shared UI primitives ──────────────────────
 
@@ -121,12 +137,12 @@ export function Sidebar({ active, onNavigate }) {
             style={{ width: 48, height: 48, objectFit: "contain" }}
           />
         </div>
-        <span
+        {/* <span
           className="text-base font-semibold"
           style={{ ...serif, fontWeight: 600, color: C.charcoal }}
         >
           Table
-        </span>
+        </span> */}
       </div>
       <p
         className="px-2 text-[11px] leading-snug mb-6"
@@ -168,7 +184,7 @@ export function Sidebar({ active, onNavigate }) {
   );
 }
 
-// ── Draggable Meal Card ───────────────────────
+// ── Meal Card ─────────────────────────────────
 
 export function MealCard({
   meal,
@@ -183,32 +199,8 @@ export function MealCard({
     meal.photo_url ||
     "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80";
 
-  // ✅ Emoji + label per meal time
-  const MEAL_LABELS = {
-    breakfast: { label: "Breakfast", emoji: "🍳" },
-    lunch: { label: "Lunch", emoji: "🥪" },
-    dinner: { label: "Dinner", emoji: "🍝" },
-    snack: { label: "Snack", emoji: "🍎" },
-    dessert: { label: "Dessert", emoji: "🍰" },
-    drinks: { label: "Drinks", emoji: "☕" },
-  };
-
-  const mealLabel = MEAL_LABELS[entry?.meal_time] || {
-    label: entry?.meal_time,
-    emoji: "🍽",
-  };
-
   return (
     <div className="relative group">
-      {/* ✅ Meal time label above the card */}
-      <p
-        className="text-[9px] font-bold uppercase tracking-widest mb-1 px-1 flex items-center gap-1"
-        style={{ ...sans, color: C.faint }}
-      >
-        <span>{mealLabel.emoji}</span>
-        {mealLabel.label}
-      </p>
-
       <div
         draggable
         onDragStart={(e) => {
@@ -242,14 +234,13 @@ export function MealCard({
           </p>
         </div>
       </div>
-
       {onRemove && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onRemove(entry);
           }}
-          className="absolute top-5 right-1 w-5 h-5 rounded-full items-center justify-center hidden group-hover:flex z-10"
+          className="absolute top-1 right-1 w-5 h-5 rounded-full items-center justify-center hidden group-hover:flex z-10"
           style={{ background: "rgba(255,251,245,0.9)" }}
         >
           <X size={10} color={C.charcoal} />
@@ -259,41 +250,109 @@ export function MealCard({
   );
 }
 
-// ── Drop Zone (empty slot or between cards) ───
-
-function DropZone({ onDrop, isOver }) {
-  return (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-      }}
-      onDrop={onDrop}
-      className="rounded-xl flex items-center justify-center h-10 flex-shrink-0 transition-all duration-150"
-      style={{
-        border: `1px dashed ${isOver ? C.primary : C.line}`,
-        background: isOver ? `${C.primary}10` : "transparent",
-        color: isOver ? C.primary : C.faint,
-      }}
-    >
-      <Plus size={16} />
-    </div>
-  );
-}
-
 export function EmptySlot({ onClick }) {
   return (
     <button
       onClick={onClick}
-      className="rounded-xl flex items-center justify-center h-10 flex-shrink-0 transition-colors"
+      className="rounded-xl flex items-center justify-center h-8 w-full flex-shrink-0 transition-colors"
       style={{ border: `1px dashed ${C.line}`, color: C.faint }}
     >
-      <Plus size={16} />
+      <Plus size={14} />
     </button>
   );
 }
 
-// ── Day Column with drag/drop ─────────────────
+// ── Meal Time Group ───────────────────────────
+// Groups cards under a labelled section per meal time
+
+function MealTimeGroup({
+  mealTime,
+  entries,
+  onOpenRecipe,
+  onRemoveEntry,
+  dragState,
+  onDragStart,
+  onDragEnd,
+  onDrop,
+  onAddClick,
+}) {
+  const meta = MEAL_META[mealTime] || {
+    label: mealTime,
+    emoji: "🍽",
+    order: 99,
+  };
+  const [isOver, setIsOver] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-1">
+      {/* Meal time label */}
+      <div className="flex items-center justify-between">
+        <p
+          className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1"
+          style={{ ...sans, color: C.faint }}
+        >
+          <span>{meta.emoji}</span> {meta.label}
+        </p>
+        {/* Small + button to add another recipe to this meal time */}
+        <button
+          onClick={() => onAddClick(mealTime)}
+          className="w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ background: C.sand }}
+          title={`Add another ${meta.label}`}
+        >
+          <Plus size={9} color={C.muted} />
+        </button>
+      </div>
+
+      {/* Cards for this meal time */}
+      {entries.map((entry) =>
+        entry.recipes ? (
+          <MealCard
+            key={entry.id}
+            meal={entry.recipes}
+            entry={entry}
+            onOpen={onOpenRecipe}
+            onRemove={onRemoveEntry}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            isDragging={dragState.dragging?.id === entry.id}
+          />
+        ) : null,
+      )}
+
+      {/* Drop zone for this meal time when dragging */}
+      {dragState.dragging && (
+        <div
+          className="rounded-xl flex items-center justify-center transition-all duration-150"
+          style={{
+            height: isOver ? 36 : 20,
+            border: `1px dashed ${isOver ? C.primary : C.line}`,
+            background: isOver ? `${C.primary}10` : "transparent",
+            color: isOver ? C.primary : C.faint,
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsOver(true);
+          }}
+          onDragLeave={() => setIsOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsOver(false);
+            onDrop(mealTime);
+          }}
+        >
+          {isOver && (
+            <p className="text-[9px]" style={{ ...sans }}>
+              Drop here
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Day Column ────────────────────────────────
 
 function DayColumn({
   dayKey,
@@ -305,35 +364,33 @@ function DayColumn({
   onDragStart,
   onDragEnd,
   onDrop,
-  onEmptyClick,
+  onAddClick,
 }) {
-  const [overZone, setOverZone] = useState(null); // index of which drop zone is hovered
+  // Sort entries by meal time order and group them
+  const grouped = {};
+  MEAL_TIMES.forEach((mt) => {
+    grouped[mt] = [];
+  });
+  for (const entry of entries) {
+    if (grouped[entry.meal_time]) {
+      grouped[entry.meal_time].push(entry);
+    }
+  }
 
-  const handleDragOver = (e, zoneIdx) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setOverZone(zoneIdx);
-  };
-
-  const handleDragLeave = () => setOverZone(null);
-
-  const handleDrop = (e, zoneIdx) => {
-    e.preventDefault();
-    setOverZone(null);
-    onDrop(dayKey, zoneIdx);
-  };
+  // Only show meal time sections that have entries or are breakfast/lunch/dinner
+  const activeMealTimes = MEAL_TIMES.filter(
+    (mt) =>
+      grouped[mt].length > 0 || ["breakfast", "lunch", "dinner"].includes(mt),
+  );
 
   return (
     <div
-      className="rounded-2xl p-2.5 flex flex-col gap-2"
+      className="group rounded-2xl p-2.5 flex flex-col gap-2.5"
       style={{
         background: C.card,
         border: `1px solid ${dragState.overDay === dayKey ? C.primary : C.line}`,
         minHeight: 320,
         transition: "border-color 0.15s",
-      }}
-      onDragOver={(e) => {
-        e.preventDefault();
       }}
     >
       <p
@@ -343,75 +400,169 @@ function DayColumn({
         {dayLabel}
       </p>
 
-      {/* Drop zone before first card */}
-      {dragState.dragging && (
-        <div
-          className="rounded-xl transition-all duration-150 flex items-center justify-center"
-          style={{
-            height: overZone === -1 ? 40 : 8,
-            background: overZone === -1 ? `${C.primary}10` : "transparent",
-            border: overZone === -1 ? `1px dashed ${C.primary}` : "none",
-          }}
-          onDragOver={(e) => handleDragOver(e, -1)}
-          onDragLeave={handleDragLeave}
-          onDrop={(e) => handleDrop(e, -1)}
+      {activeMealTimes.map((mt) => (
+        <MealTimeGroup
+          key={mt}
+          mealTime={mt}
+          entries={grouped[mt]}
+          onOpenRecipe={onOpenRecipe}
+          onRemoveEntry={onRemoveEntry}
+          dragState={dragState}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDrop={(mealTime) => onDrop(dayKey, mealTime)}
+          onAddClick={(mealTime) => onAddClick(dayKey, mealTime)}
         />
-      )}
-
-      {entries.map((entry, idx) => (
-        <React.Fragment key={entry.id}>
-          {entry.recipes && (
-            <MealCard
-              meal={entry.recipes}
-              entry={entry}
-              onOpen={onOpenRecipe}
-              onRemove={onRemoveEntry}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
-              isDragging={dragState.dragging?.id === entry.id}
-            />
-          )}
-          {/* Drop zone after each card */}
-          {dragState.dragging && (
-            <div
-              className="rounded-xl transition-all duration-150 flex items-center justify-center"
-              style={{
-                height: overZone === idx ? 40 : 8,
-                background: overZone === idx ? `${C.primary}10` : "transparent",
-                border: overZone === idx ? `1px dashed ${C.primary}` : "none",
-              }}
-              onDragOver={(e) => handleDragOver(e, idx)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, idx)}
-            />
-          )}
-        </React.Fragment>
       ))}
 
-      {/* Empty slot — only shown when not dragging */}
-      {!dragState.dragging && <EmptySlot onClick={onEmptyClick} />}
-
-      {/* Full column drop target when dragging and column is empty */}
-      {dragState.dragging && entries.length === 0 && (
-        <div
-          className="flex-1 rounded-xl flex items-center justify-center transition-all duration-150"
-          style={{
-            border: `1px dashed ${overZone === 0 ? C.primary : C.line}`,
-            background: overZone === 0 ? `${C.primary}10` : "transparent",
-            minHeight: 60,
-          }}
-          onDragOver={(e) => handleDragOver(e, 0)}
-          onDragLeave={handleDragLeave}
-          onDrop={(e) => handleDrop(e, 0)}
+      {/* Divider before other meal times */}
+      {MEAL_TIMES.filter(
+        (mt) =>
+          !["breakfast", "lunch", "dinner"].includes(mt) &&
+          grouped[mt].length === 0,
+      ).length > 0 && (
+        <button
+          onClick={() => onAddClick(dayKey, "snack")}
+          className="rounded-xl flex items-center justify-center h-8 w-full transition-colors mt-auto"
+          style={{ border: `1px dashed ${C.line}`, color: C.faint }}
         >
-          <p
-            className="text-xs"
-            style={{ ...sans, color: overZone === 0 ? C.primary : C.faint }}
-          >
-            Drop here
-          </p>
-        </div>
+          <Plus size={13} />
+        </button>
       )}
+    </div>
+  );
+}
+
+// ── Add to Week Modal ─────────────────────────
+
+function AddToWeekModal({
+  recipe,
+  userId,
+  defaultDay,
+  defaultMealTime,
+  onClose,
+  onAdded,
+}) {
+  const [selectedDay, setSelectedDay] = useState(defaultDay || DAYS[0]);
+  const [selectedMealTime, setSelectedMealTime] = useState(
+    defaultMealTime || MEAL_TIMES[0],
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleAdd = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await addMealPlanEntry(userId, recipe.id, selectedDay, selectedMealTime);
+      onAdded();
+      onClose();
+    } catch (err) {
+      setError(err.message || "Failed to add to plan");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="absolute inset-0 z-30 flex items-center justify-center"
+      style={{ background: "rgba(43,43,43,0.5)" }}
+      onClick={onClose}
+    >
+      <div
+        className="rounded-2xl p-5 w-80 shadow-2xl overflow-y-auto"
+        style={{ background: C.card, maxHeight: "85vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <h3
+            className="text-base font-semibold"
+            style={{ ...serif, color: C.charcoal }}
+          >
+            Add to week
+          </h3>
+          <button onClick={onClose}>
+            <X size={16} color={C.muted} />
+          </button>
+        </div>
+
+        {/* Recipe name */}
+        {recipe?.name && (
+          <p className="text-xs mb-3" style={{ ...sans, color: C.muted }}>
+            Adding <strong style={{ color: C.charcoal }}>{recipe.name}</strong>
+          </p>
+        )}
+
+        {/* Day picker */}
+        <p
+          className="text-xs font-semibold mb-1.5 uppercase tracking-widest"
+          style={{ ...sans, color: C.faint }}
+        >
+          Day
+        </p>
+        <div className="grid grid-cols-7 gap-1 mb-3">
+          {DAYS.map((day, i) => (
+            <button
+              key={day}
+              onClick={() => setSelectedDay(day)}
+              className="py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              style={{
+                ...sans,
+                background: selectedDay === day ? C.charcoal : C.sand,
+                color: selectedDay === day ? "#FFFBF5" : C.muted,
+              }}
+            >
+              {DAY_LABELS[i]}
+            </button>
+          ))}
+        </div>
+
+        {/* Meal time picker */}
+        <p
+          className="text-xs font-semibold mb-1.5 uppercase tracking-widest"
+          style={{ ...sans, color: C.faint }}
+        >
+          Meal
+        </p>
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {MEAL_TIMES.map((mt) => (
+            <button
+              key={mt}
+              onClick={() => setSelectedMealTime(mt)}
+              className="py-2 rounded-xl text-xs font-semibold capitalize transition-colors flex items-center justify-center gap-1"
+              style={{
+                ...sans,
+                background: selectedMealTime === mt ? C.charcoal : C.sand,
+                color: selectedMealTime === mt ? "#FFFBF5" : C.muted,
+              }}
+            >
+              {MEAL_META[mt]?.emoji} {mt}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <p className="text-xs mb-3" style={{ ...sans, color: C.primary }}>
+            {error}
+          </p>
+        )}
+
+        <button
+          onClick={handleAdd}
+          disabled={saving}
+          className="w-full py-2.5 rounded-full text-sm font-semibold transition-opacity"
+          style={{
+            ...sans,
+            background: C.primary,
+            color: C.onPrimary,
+            opacity: saving ? 0.7 : 1,
+          }}
+        >
+          {saving ? "Adding..." : "Add to plan"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -421,11 +572,9 @@ function DayColumn({
 export function ThisWeekScreen({ onOpenRecipe, userId }) {
   const [mealPlan, setMealPlan] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [addingTo, setAddingTo] = useState(null);
+  const [addModal, setAddModal] = useState(null); // { day, mealTime, recipe? }
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
-
-  // Drag state: { dragging: entry | null, overDay: string | null }
   const [dragState, setDragState] = useState({ dragging: null, overDay: null });
 
   const today = new Date();
@@ -462,7 +611,6 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
     }
   }
 
-  // ── Remove entry ──
   const handleRemoveEntry = async (entry) => {
     try {
       await removeMealPlanEntry(entry.id);
@@ -477,7 +625,6 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
     }
   };
 
-  // ── Generate grocery list ──
   const handleGenerateGroceryList = async () => {
     if (!userId) return;
     setGenerating(true);
@@ -493,69 +640,32 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
     }
   };
 
-  // ── Drag handlers ──
-  const handleDragStart = (entry) => {
+  const handleDragStart = (entry) =>
     setDragState({ dragging: entry, overDay: null });
-  };
+  const handleDragEnd = () => setDragState({ dragging: null, overDay: null });
 
-  const handleDragEnd = () => {
-    setDragState({ dragging: null, overDay: null });
-  };
-
-  const handleDrop = async (targetDay, zoneIdx) => {
+  const handleDrop = async (targetDay, targetMealTime) => {
     const sourceEntry = dragState.dragging;
     if (!sourceEntry) return;
 
     const sourceDay = sourceEntry.day_of_week;
     const sourceMealTime = sourceEntry.meal_time;
 
-    // Find what's in the target slot
-    const targetEntries = entriesByDay[targetDay];
-
-    // If dropped on same day do nothing
-    if (sourceDay === targetDay) {
+    if (sourceDay === targetDay && sourceMealTime === targetMealTime) {
       setDragState({ dragging: null, overDay: null });
       return;
     }
 
-    // Determine target meal time — use same meal time as source
-    const targetMealTime = sourceMealTime;
-
-    // Check if target slot is occupied
-    const targetEntry = targetEntries.find(
-      (e) => e.meal_time === targetMealTime,
-    );
-
     try {
-      if (targetEntry) {
-        // Swap: move target recipe to source day, move source recipe to target day
-        await Promise.all([
-          addMealPlanEntry(
-            userId,
-            sourceEntry.recipe_id,
-            targetDay,
-            targetMealTime,
-          ),
-          addMealPlanEntry(
-            userId,
-            targetEntry.recipe_id,
-            sourceDay,
-            sourceMealTime,
-          ),
-        ]);
-      } else {
-        // Move: just move source to target
-        await Promise.all([
-          addMealPlanEntry(
-            userId,
-            sourceEntry.recipe_id,
-            targetDay,
-            targetMealTime,
-          ),
-          removeMealPlanEntry(sourceEntry.id),
-        ]);
-      }
-      // Reload plan to reflect changes
+      // Always add to target slot
+      await addMealPlanEntry(
+        userId,
+        sourceEntry.recipe_id,
+        targetDay,
+        targetMealTime,
+      );
+      // Remove from source
+      await removeMealPlanEntry(sourceEntry.id);
       loadPlan();
     } catch (err) {
       console.error("Failed to move meal:", err);
@@ -584,7 +694,7 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
         <div className="flex items-center gap-3">
           {dragState.dragging && (
             <p className="text-xs" style={{ ...sans, color: C.muted }}>
-              Drop on another day to move or swap
+              Drop on a meal slot to move
             </p>
           )}
           <button
@@ -623,6 +733,10 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
                 className="h-3 rounded mb-3"
                 style={{ background: C.sand, width: "40%", margin: "0 auto" }}
               />
+              <div
+                className="h-20 rounded-xl mb-2"
+                style={{ background: C.sand }}
+              />
               <div className="h-20 rounded-xl" style={{ background: C.sand }} />
             </div>
           ))}
@@ -641,44 +755,25 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               onDrop={handleDrop}
-              onEmptyClick={() => setAddingTo({ day: dayKey })}
+              onAddClick={(day, mealTime) => setAddModal({ day, mealTime })}
             />
           ))}
         </div>
       )}
 
-      {/* Hint modal when clicking empty slot */}
-      {addingTo && (
-        <div
-          className="absolute inset-0 z-30 flex items-center justify-center"
-          style={{ background: "rgba(43,43,43,0.5)" }}
-          onClick={() => setAddingTo(null)}
-        >
-          <div
-            className="rounded-2xl p-6 w-80 shadow-2xl"
-            style={{ background: C.card }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3
-                className="text-base font-semibold"
-                style={{ ...serif, color: C.charcoal }}
-              >
-                Add a meal
-              </h3>
-              <button onClick={() => setAddingTo(null)}>
-                <X size={16} color={C.muted} />
-              </button>
-            </div>
-            <p className="text-sm" style={{ ...sans, color: C.muted }}>
-              Go to <strong style={{ color: C.charcoal }}>Recipes</strong> and
-              tap <strong style={{ color: C.charcoal }}>"+ Add to week"</strong>{" "}
-              on any recipe, or{" "}
-              <strong style={{ color: C.charcoal }}>drag</strong> an existing
-              meal from another day into this slot.
-            </p>
-          </div>
-        </div>
+      {/* Add to week modal — opened from + buttons in day columns */}
+      {addModal && (
+        <AddToWeekModal
+          recipe={addModal.recipe || null}
+          userId={userId}
+          defaultDay={addModal.day}
+          defaultMealTime={addModal.mealTime}
+          onClose={() => setAddModal(null)}
+          onAdded={() => {
+            setAddModal(null);
+            loadPlan();
+          }}
+        />
       )}
     </div>
   );
@@ -828,7 +923,7 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
           >
             + Add to week
           </button>
-          <button
+          {/* <button
             className="w-full py-2.5 rounded-full text-xs font-semibold"
             style={{
               ...sans,
@@ -837,7 +932,7 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
             }}
           >
             Add ingredients to grocery list
-          </button>
+          </button> */}
         </div>
 
         {/* Right */}
@@ -921,7 +1016,6 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
         </div>
       </div>
 
-      {/* Add to week modal */}
       {showAddToWeek && recipe.id && (
         <AddToWeekModal
           recipe={recipe}
@@ -930,120 +1024,6 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
           onAdded={() => setShowAddToWeek(false)}
         />
       )}
-    </div>
-  );
-}
-
-// ── Add to Week Modal ─────────────────────────
-
-function AddToWeekModal({ recipe, userId, onClose, onAdded }) {
-  const [selectedDay, setSelectedDay] = useState(DAYS[0]);
-  const [selectedMealTime, setSelectedMealTime] = useState(MEAL_TIMES[0]);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleAdd = async () => {
-    setSaving(true);
-    setError("");
-    try {
-      await addMealPlanEntry(userId, recipe.id, selectedDay, selectedMealTime);
-      onAdded();
-      onClose();
-    } catch (err) {
-      setError(err.message || "Failed to add to plan");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div
-      className="absolute inset-0 z-30 flex items-center justify-center"
-      style={{ background: "rgba(43,43,43,0.5)" }}
-      onClick={onClose}
-    >
-      <div
-        className="rounded-2xl p-6 w-80 shadow-2xl"
-        style={{ background: C.card }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3
-            className="text-base font-semibold"
-            style={{ ...serif, color: C.charcoal }}
-          >
-            Add to week
-          </h3>
-          <button onClick={onClose}>
-            <X size={16} color={C.muted} />
-          </button>
-        </div>
-        <p className="text-xs mb-4" style={{ ...sans, color: C.muted }}>
-          Adding <strong style={{ color: C.charcoal }}>{recipe.name}</strong>
-        </p>
-        <p
-          className="text-xs font-semibold mb-2 uppercase tracking-widest"
-          style={{ ...sans, color: C.faint }}
-        >
-          Day
-        </p>
-        <div className="grid grid-cols-7 gap-1 mb-4">
-          {DAYS.map((day, i) => (
-            <button
-              key={day}
-              onClick={() => setSelectedDay(day)}
-              className="py-1.5 rounded-lg text-xs font-semibold transition-colors"
-              style={{
-                ...sans,
-                background: selectedDay === day ? C.charcoal : C.sand,
-                color: selectedDay === day ? "#FFFBF5" : C.muted,
-              }}
-            >
-              {DAY_LABELS[i]}
-            </button>
-          ))}
-        </div>
-        <p
-          className="text-xs font-semibold mb-2 uppercase tracking-widest"
-          style={{ ...sans, color: C.faint }}
-        >
-          Meal
-        </p>
-        <div className="grid grid-cols-2 gap-2 mb-5">
-          {MEAL_TIMES.map((mt) => (
-            <button
-              key={mt}
-              onClick={() => setSelectedMealTime(mt)}
-              className="py-2 rounded-xl text-xs font-semibold capitalize transition-colors"
-              style={{
-                ...sans,
-                background: selectedMealTime === mt ? C.charcoal : C.sand,
-                color: selectedMealTime === mt ? "#FFFBF5" : C.muted,
-              }}
-            >
-              {mt}
-            </button>
-          ))}
-        </div>
-        {error && (
-          <p className="text-xs mb-3" style={{ ...sans, color: C.primary }}>
-            {error}
-          </p>
-        )}
-        <button
-          onClick={handleAdd}
-          disabled={saving}
-          className="w-full py-2.5 rounded-full text-sm font-semibold transition-opacity"
-          style={{
-            ...sans,
-            background: C.primary,
-            color: C.onPrimary,
-            opacity: saving ? 0.7 : 1,
-          }}
-        >
-          {saving ? "Adding..." : "Add to plan"}
-        </button>
-      </div>
     </div>
   );
 }

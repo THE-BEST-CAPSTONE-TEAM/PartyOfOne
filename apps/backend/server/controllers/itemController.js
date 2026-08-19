@@ -122,17 +122,9 @@ export async function addMealPlanEntry(req, res, next) {
       });
     }
 
-    // ✅ Use the Prisma-generated compound key name instead of unique_meal_slot
-    const entry = await prisma.meal_plan_entries.upsert({
-      where: {
-        meal_plan_id_day_of_week_meal_time: {
-          meal_plan_id: mealPlan.id,
-          day_of_week: dayOfWeek,
-          meal_time: mealTime,
-        },
-      },
-      update: { recipe_id: BigInt(recipeId) },
-      create: {
+    // ✅ create instead of upsert — allows multiple per slot
+    const entry = await prisma.meal_plan_entries.create({
+      data: {
         meal_plan_id: mealPlan.id,
         recipe_id: BigInt(recipeId),
         day_of_week: dayOfWeek,

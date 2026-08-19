@@ -19,7 +19,11 @@ export default function RecipeDetailModal({ onClose }) {
     >
       <div
         className="relative w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl grid"
-        style={{ gridTemplateColumns: "360px 1fr", maxHeight: "88vh", background: C.bg }}
+        style={{
+          gridTemplateColumns: "360px 1fr",
+          maxHeight: "88vh",
+          background: C.bg,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -31,16 +35,29 @@ export default function RecipeDetailModal({ onClose }) {
         </button>
 
         {/* left: photo + actions, pinned */}
-        <div className="p-6 overflow-y-auto" style={{ borderRight: `1px solid ${C.line}` }}>
-          <img src={RECIPE.photo} alt={RECIPE.title} className="w-full h-44 object-cover rounded-xl mb-4" />
-          <h2 className="text-xl mb-2 leading-tight" style={{ ...serif, fontWeight: 600, color: C.charcoal }}>
+        <div
+          className="p-6 overflow-y-auto"
+          style={{ borderRight: `1px solid ${C.line}` }}
+        >
+          <img
+            src={RECIPE.photo}
+            alt={RECIPE.title}
+            className="w-full h-44 object-cover rounded-xl mb-4"
+          />
+          <h2
+            className="text-xl mb-2 leading-tight"
+            style={{ ...serif, fontWeight: 600, color: C.charcoal }}
+          >
             {RECIPE.title}
           </h2>
           <div className="flex gap-2 mb-4">
             <TagPill tone="green">{RECIPE.tags[0]}</TagPill>
             <TagPill tone="primary">{RECIPE.tags[1]}</TagPill>
           </div>
-          <div className="flex items-center gap-4 mb-5" style={{ ...sans, color: C.muted }}>
+          <div
+            className="flex items-center gap-4 mb-5"
+            style={{ ...sans, color: C.muted }}
+          >
             <div className="flex items-center gap-1.5 text-xs">
               <Clock size={13} /> {RECIPE.time}
             </div>
@@ -49,8 +66,14 @@ export default function RecipeDetailModal({ onClose }) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-xl px-3 py-2.5 mb-4" style={{ background: C.sand }}>
-            <span className="text-xs font-semibold" style={{ ...sans, color: C.charcoal }}>
+          <div
+            className="flex items-center justify-between rounded-xl px-3 py-2.5 mb-4"
+            style={{ background: C.sand }}
+          >
+            <span
+              className="text-xs font-semibold"
+              style={{ ...sans, color: C.charcoal }}
+            >
               Servings
             </span>
             <div className="flex items-center gap-3">
@@ -61,7 +84,10 @@ export default function RecipeDetailModal({ onClose }) {
               >
                 <Minus size={12} color={C.charcoal} />
               </button>
-              <span className="text-sm font-semibold w-3 text-center" style={{ ...sans, color: C.charcoal }}>
+              <span
+                className="text-sm font-semibold w-3 text-center"
+                style={{ ...sans, color: C.charcoal }}
+              >
                 {servings}
               </span>
               <button
@@ -77,28 +103,46 @@ export default function RecipeDetailModal({ onClose }) {
           <button
             onClick={() => setSaved((s) => !s)}
             className="w-full py-2.5 rounded-full text-xs font-semibold mb-2 flex items-center justify-center gap-2"
-            style={{ ...sans, border: `1.5px solid ${C.line}`, color: C.charcoal }}
+            style={{
+              ...sans,
+              border: `1.5px solid ${C.line}`,
+              color: C.charcoal,
+            }}
           >
-            <Heart size={13} color={saved ? C.coral : C.charcoal} fill={saved ? C.coral : "none"} />
+            <Heart
+              size={13}
+              color={saved ? C.coral : C.charcoal}
+              fill={saved ? C.coral : "none"}
+            />
             {saved ? "Saved" : "Save recipe"}
           </button>
-          <button
+          {/* <button
             className="w-full py-2.5 rounded-full text-xs font-semibold shadow-sm"
             style={{ ...sans, background: C.primary, color: C.onPrimary }}
           >
             Add ingredients to grocery list
-          </button>
+          </button> */}
         </div>
 
         {/* right: ingredients + steps, scrolls independently */}
         <div className="p-6 overflow-y-auto">
-          <h3 className="text-sm font-bold mb-3" style={{ ...serif, fontWeight: 600, color: C.charcoal }}>
+          <h3
+            className="text-sm font-bold mb-3"
+            style={{ ...serif, fontWeight: 600, color: C.charcoal }}
+          >
             Ingredients
           </h3>
           <div className="mb-6">
             {RECIPE.ingredients.map((ing) => (
-              <div key={ing.id} className="flex items-center gap-3 py-2 border-b" style={{ borderColor: C.line }}>
-                <Checkbox checked={!!checked[ing.id]} onClick={() => toggle(ing.id)} />
+              <div
+                key={ing.id}
+                className="flex items-center gap-3 py-2 border-b"
+                style={{ borderColor: C.line }}
+              >
+                <Checkbox
+                  checked={!!checked[ing.id]}
+                  onClick={() => toggle(ing.id)}
+                />
                 <span
                   className="flex-1 text-sm"
                   style={{
@@ -109,14 +153,20 @@ export default function RecipeDetailModal({ onClose }) {
                 >
                   {ing.name}
                 </span>
-                <span className="text-xs font-medium" style={{ ...sans, color: C.muted }}>
+                <span
+                  className="text-xs font-medium"
+                  style={{ ...sans, color: C.muted }}
+                >
                   {ing.qty}
                 </span>
               </div>
             ))}
           </div>
 
-          <h3 className="text-sm font-bold mb-3" style={{ ...serif, fontWeight: 600, color: C.charcoal }}>
+          <h3
+            className="text-sm font-bold mb-3"
+            style={{ ...serif, fontWeight: 600, color: C.charcoal }}
+          >
             Steps
           </h3>
           <div className="flex flex-col gap-4">
@@ -124,11 +174,18 @@ export default function RecipeDetailModal({ onClose }) {
               <div key={i} className="flex gap-3">
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-                  style={{ border: `1.5px solid ${C.charcoal}`, color: C.charcoal, ...sans }}
+                  style={{
+                    border: `1.5px solid ${C.charcoal}`,
+                    color: C.charcoal,
+                    ...sans,
+                  }}
                 >
                   {i + 1}
                 </div>
-                <p className="text-sm leading-relaxed" style={{ ...sans, color: C.charcoal }}>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ ...sans, color: C.charcoal }}
+                >
                   {step}
                 </p>
               </div>
