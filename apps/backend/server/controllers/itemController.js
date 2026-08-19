@@ -9,27 +9,6 @@ BigInt.prototype.toJSON = function () {
 };
 
 // ── RECIPES ───────────────────────────────────
-
-export async function getRecipes(_req, res, next) {
-  try {
-    const recipes = await prisma.recipes.findMany({
-      include: {
-        categories: true,
-        cuisines: true,
-        meal_types: true,
-        recipe_tags: { include: { tags: true } },
-        recipe_diet_preferences: { include: { diet_preferences: true } },
-        ingredients: { orderBy: { id: "asc" } },
-        preparation_steps: { orderBy: { step_number: "asc" } },
-      },
-      orderBy: { created_at: "desc" },
-    });
-    res.json(recipes);
-  } catch (error) {
-    next(error);
-  }
-}
-
 export async function getRecipeById(req, res, next) {
   try {
     const { id } = req.params;
@@ -47,6 +26,122 @@ export async function getRecipeById(req, res, next) {
     });
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
     res.json(recipe);
+  } catch (error) {
+    next(error);
+  }
+}
+export async function getRecipes(req, res, next) {
+  try {
+    const { userId } = req.query;
+
+    const recipes = await prisma.recipes.findMany({
+      where: userId ? {
+        OR: [
+          { user_id: userId },   // ✅ their own recipes
+          { user_id: null },     // ✅ base/seed recipes visible to everyone
+        ]
+      } : undefined,
+      include: {
+        categories: true,
+        cuisines: true,
+        meal_types: true,
+        recipe_tags: { include: { tags: true } },
+        recipe_diet_preferences: { include: { diet_preferences: true } },
+        ingredients: { orderBy: { id: "asc" } },
+        preparation_steps: { orderBy: { step_number: "asc" } },
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    res.json(recipes);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteRecipe(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { userId } = req.query; // ✅ pass userId to verify ownership
+
+    const existing = await prisma.recipes.findUnique({
+      where: { id: BigInt(id) },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Recipe not found" });
+    }
+
+    // ✅ Only allow delete if this user owns the recipe
+    if (existing.user_id !== userId) {
+      return res.status(403).json({ message: "You can only delete your own recipes" });
+    }
+
+    await prisma.recipes.delete({ where: { id: BigInt(id) } });
+    res.json({ message: `Recipe ${id} deleted` });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createRecipe(req, res, next) {
+  try {
+    const {
+      name, description, cook_time, prep_time, servings,
+      calories_per_serving, difficulty, category_id, cuisine_id,
+      meal_type_id, photo_url, is_public, updated_by,
+      ingredients, preparation_steps, tags,
+    } = req.body;
+
+    if (!name) return res.status(400).json({ message: "Recipe name is required" });
+
+    const recipe = await prisma.recipes.create({
+      data: {
+        name,
+        description,
+        cook_time: cook_time ? Number(cook_time) : null,
+        prep_time: prep_time ? Number(prep_time) : null,
+        servings: servings ? Number(servings) : 1,
+        calories_per_serving: calories_per_serving ? Number(calories_per_serving) : null,
+        difficulty,
+        category_id: category_id ? Number(category_id) : null,
+        cuisine_id: cuisine_id ? Number(cuisine_id) : null,
+        meal_type_id: meal_type_id ? Number(meal_type_id) : null,
+        photo_url: photo_url || null,
+        is_public: is_public ?? false,
+        user_id: updated_by || null, // ✅ store who created it
+        updated_by: updated_by || null,
+        ingredients: ingredients?.length ? {
+          create: ingredients.map((i) => ({
+            name: i.name,
+            quantity: i.quantity ? parseFloat(i.quantity) : null,
+            unit: i.unit || null,
+            notes: i.notes || null,
+          }))
+        } : undefined,
+        preparation_steps: preparation_steps?.length ? {
+          create: preparation_steps.map((s) => ({
+            step_number: s.step_number,
+            instruction: s.instruction,
+          }))
+        } : undefined,
+        recipe_tags: tags?.length ? {
+          create: tags.map((tag_id) => ({
+            tags: { connect: { id: Number(tag_id) } }
+          }))
+        } : undefined,
+      },
+      include: {
+        categories: true,
+        cuisines: true,
+        meal_types: true,
+        ingredients: true,
+        preparation_steps: { orderBy: { step_number: "asc" } },
+        recipe_tags: { include: { tags: true } },
+      },
+    });
+
+    res.status(201).json(recipe);
   } catch (error) {
     next(error);
   }
@@ -146,6 +241,15 @@ export async function removeMealPlanEntry(req, res, next) {
       where: { id: BigInt(id) },
     });
     res.json({ message: "Entry removed" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getMealTypes(_req, res, next) {
+  try {
+    const mealTypes = await prisma.meal_types.findMany({ orderBy: { id: "asc" } });
+    res.json(mealTypes);
   } catch (error) {
     next(error);
   }

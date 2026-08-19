@@ -2,9 +2,28 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api"
 
 // ── RECIPES ───────────────────────────────────
 
-export async function fetchRecipes() {
-  const res = await fetch(`${API_BASE_URL}/recipes`);
+// export async function fetchRecipes() {
+//   const res = await fetch(`${API_BASE_URL}/recipes`);
+//   if (!res.ok) throw new Error("Failed to fetch recipes");
+//   return res.json();
+// }
+
+// ✅ Pass userId as query param
+export async function fetchRecipes(userId) {
+  const url = userId
+    ? `${API_BASE_URL}/recipes?userId=${userId}`
+    : `${API_BASE_URL}/recipes`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch recipes");
+  return res.json();
+}
+
+// ✅ Pass userId so backend can verify ownership
+export async function deleteRecipe(id, userId) {
+  const res = await fetch(`${API_BASE_URL}/recipes/${id}?userId=${userId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete recipe");
   return res.json();
 }
 
@@ -13,6 +32,24 @@ export async function fetchRecipeById(id) {
   if (!res.ok) throw new Error("Failed to fetch recipe");
   return res.json();
 }
+
+export async function createRecipe(data) {
+  const res = await fetch(`${API_BASE_URL}/recipes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create recipe");
+  return res.json();
+}
+
+// export async function deleteRecipe(id) {
+//   const res = await fetch(`${API_BASE_URL}/recipes/${id}`, {
+//     method: "DELETE",
+//   });
+//   if (!res.ok) throw new Error("Failed to delete recipe");
+//   return res.json();
+// }
 
 // ── MEAL PLAN ─────────────────────────────────
 

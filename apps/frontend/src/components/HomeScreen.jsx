@@ -126,30 +126,26 @@ export function Sidebar({ active, onNavigate }) {
         borderRight: `1px solid ${C.line}`,
       }}
     >
-      <div className="flex items-center gap-2 px-2 mb-1">
+      <div className="flex flex-col items-center px-2 mb-2">
         <div
-          className="flex items-center justify-center flex-shrink-0 rounded-xl overflow-hidden"
-          style={{ width: 48, height: 48, background: C.primary }}
+          className="flex items-center justify-center rounded-2xl overflow-hidden mb-3"
+          style={{ width: 80, height: 80, background: C.primary }}
         >
           <img
             src="./src/assets/Logo.png"
             alt="logo"
-            style={{ width: 48, height: 48, objectFit: "contain" }}
+            style={{ width: 80, height: 80, objectFit: "contain" }}
           />
         </div>
-        {/* <span
-          className="text-base font-semibold"
-          style={{ ...serif, fontWeight: 600, color: C.charcoal }}
+        <p
+          className="text-center leading-snug mb-6"
+          style={{ ...sans, fontSize: 13, fontWeight: 700, color: C.charcoal }}
         >
-          Table
-        </span> */}
+          Stop negotiating
+          <br />
+          <span style={{ color: C.primary }}>with your fridge.</span>
+        </p>
       </div>
-      <p
-        className="px-2 text-[11px] leading-snug mb-6"
-        style={{ ...sans, color: C.muted }}
-      >
-        Stop negotiating with your fridge.
-      </p>
       {items.map(({ key, label, icon: Icon }) => (
         <button
           key={key}
@@ -782,13 +778,14 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
 // ── Recipe Detail Modal ───────────────────────
 
 export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
-  const [servings, setServings] = useState(recipeProp?.servings || 1);
   const [saved, setSaved] = useState(false);
   const [checked, setChecked] = useState({});
   const [showAddToWeek, setShowAddToWeek] = useState(false);
   const toggle = (id) => setChecked((c) => ({ ...c, [id]: !c[id] }));
 
   const recipe = recipeProp || {};
+  const baseServings = recipe.servings || 1;
+  const [servings, setServings] = useState(baseServings);
   const title = recipe.name || "Recipe";
   const photo =
     recipe.photo_url ||
@@ -830,7 +827,7 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
         {/* Left */}
         <div
           className="p-6 overflow-y-auto"
-          style={{ borderRight: `1px solid ${C.line}` }}
+          style={{ borderRight: `1px solid ${C.line}`, maxHeight: "88vh" }}
         >
           <img
             src={photo}
@@ -852,8 +849,10 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
               ))}
             </div>
           )}
+          {/* Time + calories + macros row */}
+          {/* Time + calories */}
           <div
-            className="flex items-center gap-4 mb-5"
+            className="flex items-center gap-4 mb-2"
             style={{ ...sans, color: C.muted }}
           >
             {cookTime && (
@@ -867,26 +866,72 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
               </div>
             )}
           </div>
+
+          {/* Macros row — only shown if ingredient macro data exists */}
+          {(() => {
+            const totals = ingredients.reduce(
+              (acc, ing) => ({
+                protein: acc.protein + (parseFloat(ing.protein) || 0),
+                carbs: acc.carbs + (parseFloat(ing.carbs) || 0),
+                fat: acc.fat + (parseFloat(ing.fat) || 0),
+                sugar: acc.sugar + (parseFloat(ing.sugar) || 0),
+              }),
+              { protein: 0, carbs: 0, fat: 0, sugar: 0 },
+            );
+
+            const hasMacros = Object.values(totals).some((v) => v > 0);
+            if (!hasMacros) return null;
+
+            const ratio = servings / baseServings;
+
+            return (
+              <div
+                className="flex items-center gap-4 mb-5"
+                style={{ ...sans, color: C.muted }}
+              >
+                {[
+                  { label: "Protein", value: totals.protein, color: C.green },
+                  { label: "Carbs", value: totals.carbs, color: "#f59e0b" },
+                  { label: "Fat", value: totals.fat, color: "#8b5cf6" },
+                  { label: "Sugar", value: totals.sugar, color: "#ec4899" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="flex items-center gap-1 text-xs">
+                    <span style={{ fontWeight: 700, color }}>
+                      {Math.round(value * ratio)}g
+                    </span>
+                    <span style={{ color: C.faint }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           <div
             className="flex items-center justify-between rounded-xl px-3 py-2.5 mb-4"
             style={{ background: C.sand }}
           >
-            <span
-              className="text-xs font-semibold"
-              style={{ ...sans, color: C.charcoal }}
-            >
-              Servings
-            </span>
+            <div>
+              <span
+                className="text-xs font-semibold"
+                style={{ ...sans, color: C.charcoal }}
+              >
+                Servings
+              </span>
+              {servings !== baseServings && (
+                <p className="text-[10px]" style={{ ...sans, color: C.faint }}>
+                  Base: {baseServings}
+                </p>
+              )}
+            </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setServings((s) => Math.max(1, s - 1))}
                 className="w-6 h-6 rounded-full flex items-center justify-center"
-                style={{ background: C.bg }}
+                style={{ background: C.bg, opacity: servings <= 1 ? 0.4 : 1 }}
               >
                 <Minus size={12} color={C.charcoal} />
               </button>
               <span
-                className="text-sm font-semibold w-3 text-center"
+                className="text-sm font-semibold w-4 text-center"
                 style={{ ...sans, color: C.charcoal }}
               >
                 {servings}
@@ -923,23 +968,18 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
           >
             + Add to week
           </button>
-          {/* <button
-            className="w-full py-2.5 rounded-full text-xs font-semibold"
-            style={{
-              ...sans,
-              border: `1.5px solid ${C.line}`,
-              color: C.charcoal,
-            }}
-          >
-            Add ingredients to grocery list
-          </button> */}
         </div>
 
         {/* Right */}
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto" style={{ maxHeight: "88vh" }}>
+          {" "}
           <h3
             className="text-sm font-bold mb-3"
-            style={{ ...serif, fontWeight: 600, color: C.charcoal }}
+            style={{
+              ...serif,
+              fontWeight: 600,
+              color: C.charcoal,
+            }}
           >
             Ingredients
           </h3>
@@ -949,36 +989,47 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
                 No ingredients listed.
               </p>
             )}
-            {ingredients.map((ing) => (
-              <div
-                key={ing.id}
-                className="flex items-center gap-3 py-2 border-b"
-                style={{ borderColor: C.line }}
-              >
-                <Checkbox
-                  checked={!!checked[ing.id]}
-                  onClick={() => toggle(ing.id)}
-                />
-                <span
-                  className="flex-1 text-sm"
-                  style={{
-                    ...sans,
-                    color: checked[ing.id] ? C.faint : C.charcoal,
-                    textDecoration: checked[ing.id] ? "line-through" : "none",
-                  }}
+            {ingredients.map((ing) => {
+              const ratio = servings / baseServings;
+              const rawQty = parseFloat(ing.quantity);
+              const scaledQty = !isNaN(rawQty)
+                ? parseFloat((rawQty * ratio).toFixed(2))
+                : null;
+
+              return (
+                <div
+                  key={ing.id}
+                  className="flex items-center gap-3 py-2 border-b"
+                  style={{ borderColor: C.line }}
                 >
-                  {ing.name}
-                </span>
-                <span
-                  className="text-xs font-medium"
-                  style={{ ...sans, color: C.muted }}
-                >
-                  {ing.quantity
-                    ? `${ing.quantity}${ing.unit ? ` ${ing.unit}` : ""}`
-                    : ing.qty || ""}
-                </span>
-              </div>
-            ))}
+                  <Checkbox
+                    checked={!!checked[ing.id]}
+                    onClick={() => toggle(ing.id)}
+                  />
+                  <span
+                    className="flex-1 text-sm"
+                    style={{
+                      ...sans,
+                      color: checked[ing.id] ? C.faint : C.charcoal,
+                      textDecoration: checked[ing.id] ? "line-through" : "none",
+                    }}
+                  >
+                    {ing.name}
+                  </span>
+                  <span
+                    className="text-xs font-medium"
+                    style={{
+                      ...sans,
+                      color: servings !== baseServings ? C.primary : C.muted,
+                    }}
+                  >
+                    {scaledQty !== null
+                      ? `${scaledQty}${ing.unit ? ` ${ing.unit}` : ""}`
+                      : ing.qty || "—"}
+                  </span>
+                </div>
+              );
+            })}
           </div>
           <h3
             className="text-sm font-bold mb-3"

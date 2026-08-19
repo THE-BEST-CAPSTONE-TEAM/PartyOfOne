@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Search, Heart, Plus, Clock, Flame, X } from "lucide-react";
+import { Search, Heart, Plus, Clock, Flame, X, Trash2 } from "lucide-react";
 import {
   fetchRecipes,
   fetchTags,
+  fetchCategories,
+  fetchCuisines,
   saveRecipe,
   unsaveRecipe,
   fetchSavedRecipes,
   addMealPlanEntry,
+  deleteRecipe,
 } from "../api/items";
 import { useApi } from "../hooks/useApi";
+import CreateRecipeModal from "./CreateRecipeModal";
 
 const C = {
   bg: "#f7f8ef",
@@ -36,22 +40,28 @@ const DAYS = [
   "sunday",
 ];
 const DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-const MEAL_TIMES = ["breakfast", "lunch", "dinner", "snack"];
+const MEAL_TIMES = [
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+  "dessert",
+  "drinks",
+];
+const MEAL_META = {
+  breakfast: { emoji: "🍳" },
+  lunch: { emoji: "🥪" },
+  dinner: { emoji: "🍝" },
+  snack: { emoji: "🍎" },
+  dessert: { emoji: "🍰" },
+  drinks: { emoji: "☕" },
+};
 
 // ── Add to Week Modal ─────────────────────────
 
-function AddToWeekModal({
-  recipe,
-  userId,
-  defaultDay,
-  defaultMealTime,
-  onClose,
-  onAdded,
-}) {
-  const [selectedDay, setSelectedDay] = useState(defaultDay || DAYS[0]);
-  const [selectedMealTime, setSelectedMealTime] = useState(
-    defaultMealTime || MEAL_TIMES[0],
-  );
+function AddToWeekModal({ recipe, userId, onClose, onAdded }) {
+  const [selectedDay, setSelectedDay] = useState(DAYS[0]);
+  const [selectedMealTime, setSelectedMealTime] = useState(MEAL_TIMES[0]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -71,7 +81,7 @@ function AddToWeekModal({
 
   return (
     <div
-      className="absolute inset-0 z-30 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: "rgba(43,43,43,0.5)" }}
       onClick={onClose}
     >
@@ -80,7 +90,6 @@ function AddToWeekModal({
         style={{ background: C.card, maxHeight: "85vh" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <h3
             className="text-base font-semibold"
@@ -92,15 +101,9 @@ function AddToWeekModal({
             <X size={16} color={C.muted} />
           </button>
         </div>
-
-        {/* Recipe name */}
-        {recipe?.name && (
-          <p className="text-xs mb-3" style={{ ...sans, color: C.muted }}>
-            Adding <strong style={{ color: C.charcoal }}>{recipe.name}</strong>
-          </p>
-        )}
-
-        {/* Day picker */}
+        <p className="text-xs mb-3" style={{ ...sans, color: C.muted }}>
+          Adding <strong style={{ color: C.charcoal }}>{recipe.name}</strong>
+        </p>
         <p
           className="text-xs font-semibold mb-1.5 uppercase tracking-widest"
           style={{ ...sans, color: C.faint }}
@@ -123,8 +126,6 @@ function AddToWeekModal({
             </button>
           ))}
         </div>
-
-        {/* Meal time picker */}
         <p
           className="text-xs font-semibold mb-1.5 uppercase tracking-widest"
           style={{ ...sans, color: C.faint }}
@@ -147,13 +148,11 @@ function AddToWeekModal({
             </button>
           ))}
         </div>
-
         {error && (
           <p className="text-xs mb-3" style={{ ...sans, color: C.primary }}>
             {error}
           </p>
         )}
-
         <button
           onClick={handleAdd}
           disabled={saving}
@@ -172,11 +171,72 @@ function AddToWeekModal({
   );
 }
 
+// ── Delete confirm modal ──────────────────────
+
+function DeleteConfirmModal({ recipe, onConfirm, onClose, deleting }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(43,43,43,0.5)" }}
+      onClick={onClose}
+    >
+      <div
+        className="rounded-2xl p-6 w-72 shadow-2xl"
+        style={{ background: C.card }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3
+          className="text-base font-semibold mb-2"
+          style={{ ...serif, color: C.charcoal }}
+        >
+          Delete recipe?
+        </h3>
+        <p className="text-sm mb-5" style={{ ...sans, color: C.muted }}>
+          <strong style={{ color: C.charcoal }}>{recipe.name}</strong> will be
+          permanently deleted. This cannot be undone.
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-full text-sm font-semibold"
+            style={{ ...sans, border: `1.5px solid ${C.line}`, color: C.muted }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={deleting}
+            className="flex-1 py-2.5 rounded-full text-sm font-semibold transition-opacity"
+            style={{
+              ...sans,
+              background: C.primary,
+              color: C.onPrimary,
+              opacity: deleting ? 0.7 : 1,
+            }}
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Recipe Card ───────────────────────────────
 
-function RecipeCard({ recipe, isSaved, onSaveToggle, onOpen, onAddToWeek }) {
+function RecipeCard({
+  recipe,
+  isSaved,
+  onSaveToggle,
+  onOpen,
+  onAddToWeek,
+  onDelete,
+  userId,
+}) {
   const [hovering, setHovering] = useState(false);
   const [savePending, setSavePending] = useState(false);
+
+  const isOwner = String(recipe.user_id) === String(userId); // ✅
 
   const handleSaveToggle = async (e) => {
     e.stopPropagation();
@@ -220,29 +280,40 @@ function RecipeCard({ recipe, isSaved, onSaveToggle, onOpen, onAddToWeek }) {
                 "linear-gradient(to top, rgba(43,43,43,0.5), transparent)",
             }}
           >
-            {/* ✅ Add to week triggers the modal */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onAddToWeek(recipe);
               }}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold"
+              className="px-2.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
               style={{ ...sans, background: C.primary, color: C.onPrimary }}
             >
               + Add to week
             </button>
-            <button
-              onClick={handleSaveToggle}
-              disabled={savePending}
-              className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(255,251,245,0.9)" }}
-            >
-              <Heart
-                size={14}
-                color={isSaved ? C.primary : C.charcoal}
-                fill={isSaved ? C.primary : "none"}
-              />
-            </button>
+            <div className="flex gap-1.5">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(recipe);
+                }}
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(255,251,245,0.9)" }}
+              >
+                <Trash2 size={13} color={C.primary} />
+              </button>
+              <button
+                onClick={handleSaveToggle}
+                disabled={savePending}
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(255,251,245,0.9)" }}
+              >
+                <Heart
+                  size={14}
+                  color={isSaved ? C.primary : C.charcoal}
+                  fill={isSaved ? C.primary : "none"}
+                />
+              </button>
+            </div>
           </div>
         )}
         {isSaved && !hovering && (
@@ -317,17 +388,43 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
   const [activeFilter, setActiveFilter] = useState("All");
   const [savedIds, setSavedIds] = useState(new Set());
   const [addToWeekRecipe, setAddToWeekRecipe] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [recipes, setRecipes] = useState([]);
+  const [recipesLoading, setRecipesLoading] = useState(true);
+  const [recipesError, setRecipesError] = useState(null);
 
-  const {
-    data: recipes,
-    loading: recipesLoading,
-    error: recipesError,
-  } = useApi(fetchRecipes);
   const { data: tags, loading: tagsLoading } = useApi(fetchTags);
+  const { data: categories } = useApi(fetchCategories);
+  const { data: cuisines } = useApi(fetchCuisines);
   const { data: savedRecipes } = useApi(
     () => fetchSavedRecipes(userId),
     [userId],
   );
+
+  // Fetch meals types for create modal
+  const [mealTypes, setMealTypes] = useState([]);
+  useEffect(() => {
+    fetch(
+      `${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/meal-types`,
+    )
+      .then((r) => r.json())
+      .then(setMealTypes)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadRecipes();
+  }, []);
+
+  const loadRecipes = () => {
+    setRecipesLoading(true);
+    fetchRecipes(userId)
+      .then(setRecipes)
+      .catch((err) => setRecipesError(err.message))
+      .finally(() => setRecipesLoading(false));
+  };
 
   useEffect(() => {
     if (savedRecipes) {
@@ -337,7 +434,7 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
 
   const filters = ["All", ...(tags?.map((t) => t.name) || [])];
 
-  const filtered = (recipes || []).filter((r) => {
+  const filtered = recipes.filter((r) => {
     const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase());
     const recipeTags = r.recipe_tags?.map((rt) => rt.tags?.name) || [];
     const matchesFilter =
@@ -366,6 +463,26 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteRecipe(deleteTarget.id, userId);
+      setRecipes((prev) =>
+        prev.filter((r) => String(r.id) !== String(deleteTarget.id)),
+      );
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleCreated = (newRecipe) => {
+    setRecipes((prev) => [newRecipe, ...prev]);
+  };
+
   return (
     <div
       className="flex-1 overflow-y-auto px-8 py-7"
@@ -382,10 +499,11 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
           <p className="text-sm" style={{ ...sans, color: C.muted }}>
             {recipesLoading
               ? "Loading..."
-              : `${recipes?.length || 0} recipes in your library`}
+              : `${recipes.length} recipes in your library`}
           </p>
         </div>
         <button
+          onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold shadow-sm"
           style={{ ...sans, background: C.primary, color: C.onPrimary }}
         >
@@ -393,7 +511,6 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
         </button>
       </div>
 
-      {/* Search */}
       <div className="mb-6">
         <div
           className="flex items-center gap-2 rounded-xl px-3 py-2.5 mb-3"
@@ -414,7 +531,6 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
             </button>
           )}
         </div>
-
         {!tagsLoading && (
           <div className="flex gap-2 flex-wrap">
             {filters.map((f) => (
@@ -437,10 +553,7 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
       </div>
 
       {recipesError && (
-        <div
-          className="rounded-xl p-4 mb-4"
-          style={{ background: "#FFF0F0", border: `1px solid #FFD0D0` }}
-        >
+        <div className="rounded-xl p-4 mb-4" style={{ background: "#FFF0F0" }}>
           <p className="text-sm" style={{ ...sans, color: C.primary }}>
             Failed to load recipes: {recipesError}
           </p>
@@ -467,22 +580,44 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
             <RecipeCard
               key={r.id}
               recipe={r}
+              userId={userId}
               isSaved={savedIds.has(String(r.id))}
               onSaveToggle={handleSaveToggle}
               onOpen={onOpenRecipe}
               onAddToWeek={setAddToWeekRecipe}
+              onDelete={setDeleteTarget}
             />
           ))}
         </div>
       )}
 
-      {/* Add to Week modal */}
       {addToWeekRecipe && (
         <AddToWeekModal
           recipe={addToWeekRecipe}
           userId={userId}
           onClose={() => setAddToWeekRecipe(null)}
           onAdded={() => setAddToWeekRecipe(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          recipe={deleteTarget}
+          onConfirm={handleDelete}
+          onClose={() => setDeleteTarget(null)}
+          deleting={deleting}
+        />
+      )}
+
+      {showCreate && (
+        <CreateRecipeModal
+          onClose={() => setShowCreate(false)}
+          onCreated={handleCreated}
+          categories={categories || []}
+          cuisines={cuisines || []}
+          mealTypes={mealTypes || []}
+          tags={tags || []}
+          userId={userId}
         />
       )}
     </div>

@@ -19,6 +19,9 @@ import {
   getCuisines,
   getDietPreferences,
   getOrCreateProfile,
+  createRecipe,
+  deleteRecipe,
+  getMealTypes
 } from "../controllers/itemController.js";
 
 const router = Router();
@@ -28,11 +31,15 @@ router.get("/health", getHealth);
 // ── RECIPES ───────────────────────────────────
 router.get("/recipes", getRecipes);
 router.get("/recipes/:id", getRecipeById);
+router.post("/recipes", createRecipe);
+router.delete("/recipes/:id", deleteRecipe);
 
 // ── MEAL PLAN ─────────────────────────────────
 router.get("/meal-plan/:userId", getMealPlan);
 router.post("/meal-plan/entry", addMealPlanEntry);
 router.delete("/meal-plan/entry/:id", removeMealPlanEntry);
+
+router.get("/meal-types", getMealTypes);
 
 // ── GROCERY LIST ──────────────────────────────
 router.get("/grocery/:userId", getGroceryList);
