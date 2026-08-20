@@ -246,11 +246,12 @@ function ShareMenu({ groups, onClose }) {
   return (
     <div
       ref={menuRef}
-      className="absolute right-0 top-12 rounded-2xl shadow-xl overflow-hidden z-50"
+      className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 md:top-12 rounded-2xl shadow-xl overflow-hidden z-50"
       style={{
         background: C.card,
         border: `1px solid ${C.line}`,
-        width: 300,
+        top: "auto",
+        bottom: "5rem",
       }}
     >
       {/* Header */}
@@ -366,7 +367,7 @@ function CategorySection({
           {items.map((item, idx) => (
             <div
               key={item.id}
-              className="flex items-center gap-3 px-4 py-3 group/item"
+              className="flex items-center gap-3 px-4 py-3.5 md:py-3 group/item"
               style={{
                 borderBottom:
                   idx < items.length - 1 ? `1px solid ${C.line}` : "none",
@@ -399,7 +400,7 @@ function CategorySection({
               )}
               <button
                 onClick={() => onDelete(item)}
-                className="opacity-0 group-hover/item:opacity-100 transition-opacity"
+                className="opacity-100 md:opacity-0 md:group-hover/item:opacity-100 transition-opacity"
               >
                 <Trash2 size={13} color={C.faint} />
               </button>
@@ -534,12 +535,13 @@ export default function GroceryListScreen({ userId }) {
 
   return (
     <div
-      className="flex-1 overflow-y-auto px-8 py-7 relative"
+      className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-7 relative"
       style={{ background: C.bg }}
     >
       <div className="max-w-xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
+          {" "}
           <div className="flex items-center justify-between mb-1">
             <h1
               className="text-2xl"
@@ -591,11 +593,9 @@ export default function GroceryListScreen({ userId }) {
               )}
             </div>
           </div>
-
           <p className="text-sm mb-4" style={{ ...sans, color: C.muted }}>
             Week of {weekLabel}
           </p>
-
           {/* Progress bar */}
           {items.length > 0 && (
             <div className="flex items-center gap-3">
@@ -751,7 +751,7 @@ export default function GroceryListScreen({ userId }) {
         {groceryList && !adding && (
           <button
             onClick={() => setAdding(true)}
-            className="fixed bottom-8 right-8 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105"
+            className="fixed bottom-24 md:bottom-8 right-6 md:right-8 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105"
             style={{ background: C.primary }}
           >
             <Plus size={20} color={C.onPrimary} />

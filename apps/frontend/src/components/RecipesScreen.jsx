@@ -264,9 +264,11 @@ function RecipeCard({
       style={{ background: C.card, border: `1px solid ${C.line}` }}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
+      onTouchStart={() => setHovering(true)}
       onClick={() => onOpen(recipe)}
     >
-      <div className="relative h-44 overflow-hidden">
+      <div className="relative h-36 md:h-44 overflow-hidden">
+        {" "}
         <img
           src={photo}
           alt={recipe.name}
@@ -274,7 +276,7 @@ function RecipeCard({
         />
         {hovering && (
           <div
-            className="absolute inset-0 flex items-end justify-between p-3"
+            className="absolute inset-0 flex items-end justify-between p-2 md:p-3"
             style={{
               background:
                 "linear-gradient(to top, rgba(43,43,43,0.5), transparent)",
@@ -354,10 +356,7 @@ function RecipeCard({
 
 function LoadingGrid() {
   return (
-    <div
-      className="grid gap-4"
-      style={{ gridTemplateColumns: "repeat(4, 1fr)" }}
-    >
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <div
           key={i}
@@ -485,10 +484,10 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
 
   return (
     <div
-      className="flex-1 overflow-y-auto px-8 py-7"
+      className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-7"
       style={{ background: C.bg }}
     >
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
         <div>
           <h1
             className="text-2xl mb-1"
@@ -504,7 +503,7 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold shadow-sm"
+          className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold shadow-sm whitespace-nowrap"
           style={{ ...sans, background: C.primary, color: C.onPrimary }}
         >
           <Plus size={15} /> Add recipe
@@ -532,7 +531,8 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
           )}
         </div>
         {!tagsLoading && (
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible">
+            {" "}
             {filters.map((f) => (
               <button
                 key={f}
@@ -572,10 +572,7 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
           </p>
         </div>
       ) : (
-        <div
-          className="grid gap-4"
-          style={{ gridTemplateColumns: "repeat(4, 1fr)" }}
-        >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {filtered.map((r) => (
             <RecipeCard
               key={r.id}

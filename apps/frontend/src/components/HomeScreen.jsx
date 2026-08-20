@@ -805,14 +805,14 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
 
   return (
     <div
-      className="absolute inset-0 z-20 flex items-center justify-center p-8"
+      className="fixed md:absolute inset-0 z-20 flex items-end md:items-center justify-center md:p-8"
       style={{ background: "rgba(43,43,43,0.45)" }}
     >
       <div
-        className="relative w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl grid"
+        className="relative w-full md:max-w-4xl rounded-t-2xl md:rounded-2xl overflow-hidden shadow-2xl flex flex-col md:grid"
         style={{
           gridTemplateColumns: "360px 1fr",
-          maxHeight: "88vh",
+          maxHeight: "92vh",
           background: C.bg,
         }}
       >
@@ -826,13 +826,17 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
 
         {/* Left */}
         <div
-          className="p-6 overflow-y-auto"
-          style={{ borderRight: `1px solid ${C.line}`, maxHeight: "88vh" }}
+          className="p-4 md:p-6 overflow-y-auto"
+          style={{
+            borderRight: "none",
+            borderBottom: `1px solid ${C.line}`,
+            maxHeight: "45vh",
+          }}
         >
           <img
             src={photo}
             alt={title}
-            className="w-full h-44 object-cover rounded-xl mb-4"
+            className="w-full h-36 md:h-44 object-cover rounded-xl mb-3 md:mb-4"
           />
           <h2
             className="text-xl mb-2 leading-tight"
@@ -971,8 +975,10 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
         </div>
 
         {/* Right */}
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: "88vh" }}>
-          {" "}
+        <div
+          className="p-4 md:p-6 overflow-y-auto"
+          style={{ maxHeight: "47vh", flex: 1 }}
+        >
           <h3
             className="text-sm font-bold mb-3"
             style={{

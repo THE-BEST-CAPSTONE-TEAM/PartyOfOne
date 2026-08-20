@@ -38,9 +38,11 @@ function SavedCard({ recipe, onUnsave, onOpen }) {
       style={{ background: C.card, border: `1px solid ${C.line}` }}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
+      onTouchStart={() => setHovering(true)}
       onClick={() => onOpen(recipe)}
     >
-      <div className="relative h-44 overflow-hidden">
+      <div className="relative h-36 md:h-44 overflow-hidden">
+        {" "}
         <img
           src={photo}
           alt={recipe.name}
@@ -48,7 +50,7 @@ function SavedCard({ recipe, onUnsave, onOpen }) {
         />
         {hovering && (
           <div
-            className="absolute inset-0 flex items-end justify-between p-3"
+            className="absolute inset-0 flex items-end justify-between p-2 md:p-3"
             style={{
               background:
                 "linear-gradient(to top, rgba(43,43,43,0.5), transparent)",
@@ -190,10 +192,10 @@ export default function SavedScreen({ onOpenRecipe, userId }) {
 
   return (
     <div
-      className="flex-1 overflow-y-auto px-8 py-7"
+      className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-7"
       style={{ background: C.bg }}
     >
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
         <div>
           <h1
             className="text-2xl mb-1"
@@ -206,10 +208,7 @@ export default function SavedScreen({ onOpenRecipe, userId }) {
           </p>
         </div>
       </div>
-      <div
-        className="grid gap-4"
-        style={{ gridTemplateColumns: "repeat(4, 1fr)" }}
-      >
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {saved.map((r) => (
           <SavedCard
             key={r.id}

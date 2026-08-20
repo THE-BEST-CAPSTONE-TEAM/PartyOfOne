@@ -286,11 +286,26 @@ export default function SettingsScreen({ session, onLogout, userId }) {
     : "—";
   const initials = email.slice(0, 2).toUpperCase();
 
+  //   useEffect(() => {
+  //     if (!userId) return;
+  //     fetchMealPlan(userId)
+  //       .then(setMealPlan)
+  //       .catch(console.error)
+  //       .finally(() => setLoading(false));
+  //   }, [userId]);
+
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      console.log("No userId yet");
+      return;
+    }
+    console.log("Fetching meal plan for userId:", userId);
     fetchMealPlan(userId)
-      .then(setMealPlan)
-      .catch(console.error)
+      .then((data) => {
+        console.log("Meal plan data:", data);
+        setMealPlan(data);
+      })
+      .catch((err) => console.error("Meal plan error:", err))
       .finally(() => setLoading(false));
   }, [userId]);
 

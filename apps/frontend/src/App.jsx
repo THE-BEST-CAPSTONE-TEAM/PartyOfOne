@@ -10,6 +10,7 @@ import GroceryListScreen from "./components/GroceryListScreen.jsx";
 import SavedScreen from "./components/SavedScreen.jsx";
 import SettingsScreen from "./components/SettingsScreen.jsx";
 import LoginPage from "./components/LoginPage";
+import BottomNav from "./components/BottomNav.jsx";
 import { supabase } from "./lib/supabase";
 import { C } from "./theme/tokens";
 import "tailwindcss";
@@ -25,7 +26,6 @@ export default function App() {
   const [recipeOpen, setRecipeOpen] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
 
-  // Extract userId once so it can be passed to every screen
   const userId = session?.user?.id;
 
   useEffect(() => {
@@ -83,7 +83,13 @@ export default function App() {
       case "saved":
         return <SavedScreen onOpenRecipe={handleOpenRecipe} userId={userId} />;
       case "settings":
-        return <SettingsScreen session={session} onLogout={handleLogout} />;
+        return (
+          <SettingsScreen
+            session={session}
+            onLogout={handleLogout}
+            userId={userId}
+          />
+        );
       default:
         return (
           <ThisWeekScreen onOpenRecipe={handleOpenRecipe} userId={userId} />
@@ -92,21 +98,47 @@ export default function App() {
   }
 
   return (
+    // ── Outer shell ──────────────────────────────────────────────
+    // Mobile: full screen, no padding, no rounded corners
+    // Desktop: centered card with padding, rounded corners, shadow
     <div
-      className="w-full flex justify-center py-6"
+      className="min-h-screen w-full md:flex md:items-center md:justify-center md:py-6"
       style={{ background: "#EDE4D3" }}
     >
       <style>{FONT_IMPORT}</style>
       <div
-        className="relative flex rounded-2xl overflow-hidden shadow-2xl"
-        style={{ width: 1180, height: 720, background: C.bg }}
+        className={[
+          // Mobile: full screen stack
+          "relative flex flex-col w-full min-h-screen",
+          // Desktop: fixed card
+          "md:flex-row md:rounded-2xl md:overflow-hidden md:shadow-2xl md:min-h-0",
+        ].join(" ")}
+        style={{
+          background: C.bg,
+          // Desktop fixed dimensions
+          ...(typeof window !== "undefined" && window.innerWidth >= 768
+            ? { width: 1180, height: 720, minHeight: "unset" }
+            : {}),
+        }}
       >
-        <Sidebar
-          active={active}
-          onNavigate={setActive}
-          onLogout={handleLogout}
-        />
-        {renderScreen()}
+        {/* Sidebar — hidden on mobile, visible on desktop */}
+        <div className="hidden md:block">
+          <Sidebar
+            active={active}
+            onNavigate={setActive}
+            onLogout={handleLogout}
+          />
+        </div>
+
+        {/* Main content — takes remaining space */}
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          {/* Add bottom padding on mobile so content isn't hidden behind bottom nav */}
+          <div className="flex-1 overflow-y-auto pb-20 md:pb-0">
+            {renderScreen()}
+          </div>
+        </div>
+
+        {/* Recipe modal */}
         {recipeOpen && (
           <RecipeDetailModal
             recipe={selectedRecipe}
@@ -117,6 +149,11 @@ export default function App() {
             }}
           />
         )}
+      </div>
+
+      {/* Bottom nav — mobile only */}
+      <div className="md:hidden">
+        <BottomNav active={active} onNavigate={setActive} />
       </div>
     </div>
   );
