@@ -1,0 +1,11 @@
+{
+    "name": "party-of-one",
+    "version": "1.0.0",
+    "scripts": {
+        "build": "cd apps/backend && npm install && npx prisma generate",
+        "start": "cd apps/backend && node server/server.js"
+    },
+    "engines": {
+        "node": ">=20.0.0"
+    }
+}
