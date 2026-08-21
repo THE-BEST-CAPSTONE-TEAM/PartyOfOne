@@ -19,6 +19,7 @@ import {
   generateGroceryList,
 } from "../api/items";
 import "tailwindcss";
+import logo from "../assets/Logo.png";
 
 const C = {
   bg: "#f7f8ef",
@@ -132,7 +133,7 @@ export function Sidebar({ active, onNavigate }) {
           style={{ width: 80, height: 80, background: C.primary }}
         >
           <img
-            src="./src/assets/Logo.png"
+            src={logo}
             alt="logo"
             style={{ width: 80, height: 80, objectFit: "contain" }}
           />
