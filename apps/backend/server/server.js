@@ -6,7 +6,9 @@ import apiRoutes from "./routes/items.js";
 dotenv.config();
 
 const app = express();
+// const port = Number(process.env.PORT) || 3001;
 const port = Number(process.env.PORT) || 3001;
+
 
 // ✅ Single cors config, before everything else
 app.use(cors({
@@ -28,6 +30,6 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ message: "Something went wrong on the server." });
 });
 
-app.listen(port, () => {
-  console.log(`Backend listening on http://localhost:${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Backend listening on http://0.0.0.0:${port}`);
 });
