@@ -17,9 +17,11 @@ import {
   addMealPlanEntry,
   removeMealPlanEntry,
   generateGroceryList,
+  fetchRecipes,
 } from "../api/items";
 import "tailwindcss";
 import logo from "../assets/Logo.png";
+import { EditPhotoButton, DEFAULT_RECIPE_PHOTO } from "./PhotoUpload";
 
 const C = {
   bg: "#f7f8ef",
@@ -444,14 +446,43 @@ function AddToWeekModal({
   const [selectedMealTime, setSelectedMealTime] = useState(
     defaultMealTime || MEAL_TIMES[0],
   );
+  const [selectedRecipe, setSelectedRecipe] = useState(recipe || null);
+  const [recipes, setRecipes] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loadingRecipes, setLoadingRecipes] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Load recipes if none passed in
+  useEffect(() => {
+    if (!recipe) {
+      setLoadingRecipes(true);
+      fetchRecipes(userId)
+        .then(setRecipes)
+        .catch(console.error)
+        .finally(() => setLoadingRecipes(false));
+    }
+  }, []);
+
+  const filtered = recipes.filter((r) =>
+    r.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
   const handleAdd = async () => {
+    const recipeToAdd = selectedRecipe || recipe;
+    if (!recipeToAdd) {
+      setError("Please select a recipe");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
-      await addMealPlanEntry(userId, recipe.id, selectedDay, selectedMealTime);
+      await addMealPlanEntry(
+        userId,
+        recipeToAdd.id,
+        selectedDay,
+        selectedMealTime,
+      );
       onAdded();
       onClose();
     } catch (err) {
@@ -468,8 +499,12 @@ function AddToWeekModal({
       onClick={onClose}
     >
       <div
-        className="rounded-2xl p-5 w-80 shadow-2xl overflow-y-auto"
-        style={{ background: C.card, maxHeight: "85vh" }}
+        className="rounded-2xl p-5 shadow-2xl overflow-y-auto"
+        style={{
+          background: C.card,
+          maxHeight: "85vh",
+          width: recipe ? 320 : 380,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -485,7 +520,110 @@ function AddToWeekModal({
           </button>
         </div>
 
-        {/* Recipe name */}
+        {/* ── Recipe picker — only shown when no recipe passed in ── */}
+        {!recipe && (
+          <div className="mb-4">
+            <p
+              className="text-xs font-semibold mb-1.5 uppercase tracking-widest"
+              style={{ ...sans, color: C.faint }}
+            >
+              Recipe
+            </p>
+
+            {/* Search */}
+            <div
+              className="flex items-center gap-2 rounded-xl px-3 py-2 mb-2"
+              style={{ background: C.bg, border: `1px solid ${C.line}` }}
+            >
+              <input
+                type="text"
+                placeholder="Search recipes..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 text-xs bg-transparent outline-none"
+                style={{ ...sans, color: C.charcoal }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+
+            {/* Recipe list */}
+            <div
+              className="flex flex-col gap-1 overflow-y-auto rounded-xl"
+              style={{ maxHeight: 180, border: `1px solid ${C.line}` }}
+            >
+              {loadingRecipes ? (
+                <p className="text-xs p-3" style={{ ...sans, color: C.faint }}>
+                  Loading recipes...
+                </p>
+              ) : filtered.length === 0 ? (
+                <p className="text-xs p-3" style={{ ...sans, color: C.faint }}>
+                  No recipes found
+                </p>
+              ) : (
+                filtered.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedRecipe(r);
+                    }}
+                    className="flex items-center gap-3 px-3 py-2.5 text-left transition-colors"
+                    style={{
+                      background: selectedRecipe?.id === r.id ? C.sand : C.card,
+                      borderBottom: `1px solid ${C.line}`,
+                    }}
+                  >
+                    <img
+                      src={
+                        r.photo_url ||
+                        "https://images.unsplash.com/photo-1614548540093-6f7dfceed46b?w=100&q=80"
+                      }
+                      alt={r.name}
+                      className="rounded-lg object-cover flex-shrink-0"
+                      style={{ width: 36, height: 36 }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-xs font-semibold truncate"
+                        style={{ ...sans, color: C.charcoal }}
+                      >
+                        {r.name}
+                      </p>
+                      {r.calories_per_serving && (
+                        <p
+                          className="text-[10px]"
+                          style={{ ...sans, color: C.faint }}
+                        >
+                          {r.calories_per_serving} cal
+                        </p>
+                      )}
+                    </div>
+                    {selectedRecipe?.id === r.id && (
+                      <div
+                        className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: C.primary }}
+                      >
+                        <Check size={9} color={C.onPrimary} />
+                      </div>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Selected recipe confirmation */}
+            {selectedRecipe && (
+              <p
+                className="text-xs mt-2 font-semibold"
+                style={{ ...sans, color: C.green }}
+              >
+                ✓ {selectedRecipe.name} selected
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Recipe name — shown when recipe passed in */}
         {recipe?.name && (
           <p className="text-xs mb-3" style={{ ...sans, color: C.muted }}>
             Adding <strong style={{ color: C.charcoal }}>{recipe.name}</strong>
@@ -548,13 +686,13 @@ function AddToWeekModal({
 
         <button
           onClick={handleAdd}
-          disabled={saving}
+          disabled={saving || (!recipe && !selectedRecipe)}
           className="w-full py-2.5 rounded-full text-sm font-semibold transition-opacity"
           style={{
             ...sans,
             background: C.primary,
             color: C.onPrimary,
-            opacity: saving ? 0.7 : 1,
+            opacity: saving || (!recipe && !selectedRecipe) ? 0.5 : 1,
           }}
         >
           {saving ? "Adding..." : "Add to plan"}
@@ -788,9 +926,9 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
   const baseServings = recipe.servings || 1;
   const [servings, setServings] = useState(baseServings);
   const title = recipe.name || "Recipe";
-  const photo =
-    recipe.photo_url ||
-    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=900&q=80";
+  const [currentPhoto, setCurrentPhoto] = useState(
+    recipe.photo_url || DEFAULT_RECIPE_PHOTO,
+  );
   const tags =
     recipe.recipe_tags?.map((rt) => rt.tags?.name).filter(Boolean) || [];
   const cookTime = recipe.cook_time
@@ -834,11 +972,19 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
             maxHeight: "45vh",
           }}
         >
-          <img
-            src={photo}
-            alt={title}
-            className="w-full h-36 md:h-44 object-cover rounded-xl mb-3 md:mb-4"
-          />
+          <div className="relative w-full mb-4">
+            <img
+              src={currentPhoto}
+              alt={title}
+              className="w-full h-44 object-cover rounded-xl"
+            />
+            <EditPhotoButton
+              recipeId={recipe.id}
+              userId={userId}
+              currentPhoto={currentPhoto}
+              onUpdated={setCurrentPhoto}
+            />
+          </div>
           <h2
             className="text-xl mb-2 leading-tight"
             style={{ ...serif, fontWeight: 600, color: C.charcoal }}

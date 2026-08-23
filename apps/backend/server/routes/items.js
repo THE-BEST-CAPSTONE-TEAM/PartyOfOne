@@ -21,7 +21,8 @@ import {
   getOrCreateProfile,
   createRecipe,
   deleteRecipe,
-  getMealTypes
+  getMealTypes,
+  updateRecipePhoto
 } from "../controllers/itemController.js";
 
 const router = Router();
@@ -61,5 +62,7 @@ router.get("/diet-preferences", getDietPreferences);
 
 // ── PROFILES ──────────────────────────────────
 router.post("/profile", getOrCreateProfile);
+
+router.patch("/recipes/:id/photo", updateRecipePhoto);
 
 export default router;

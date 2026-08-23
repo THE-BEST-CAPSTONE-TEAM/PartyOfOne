@@ -168,16 +168,6 @@ function ShareMenu({ groups, onClose }) {
   const menuRef = useRef(null);
   const text = formatListAsText(groups);
 
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        onClose();
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text);
@@ -246,12 +236,17 @@ function ShareMenu({ groups, onClose }) {
   return (
     <div
       ref={menuRef}
-      className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 md:top-12 rounded-2xl shadow-xl overflow-hidden z-50"
       style={{
+        position: "absolute",
+        top: 44,
+        right: 0,
         background: C.card,
         border: `1px solid ${C.line}`,
-        top: "auto",
-        bottom: "5rem",
+        borderRadius: 16,
+        boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+        overflow: "hidden",
+        zIndex: 9999,
+        width: 300,
       }}
     >
       {/* Header */}
@@ -566,11 +561,19 @@ export default function GroceryListScreen({ userId }) {
                     <Share2 size={13} />
                     Share
                   </button>
+
                   {showShare && (
-                    <ShareMenu
-                      groups={groups}
-                      onClose={() => setShowShare(false)}
-                    />
+                    <>
+                      {/* ✅ Invisible overlay — clicking outside closes the menu */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowShare(false)}
+                      />
+                      <ShareMenu
+                        groups={groups}
+                        onClose={() => setShowShare(false)}
+                      />
+                    </>
                   )}
                 </div>
               )}

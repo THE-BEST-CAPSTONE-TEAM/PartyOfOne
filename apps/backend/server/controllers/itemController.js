@@ -522,3 +522,19 @@ export async function getOrCreateProfile(req, res, next) {
   }
 }
 
+export async function updateRecipePhoto(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { photo_url } = req.body;
+
+    const recipe = await prisma.recipes.update({
+      where: { id: BigInt(id) },
+      data: { photo_url },
+    });
+
+    res.json(recipe);
+  } catch (error) {
+    next(error);
+  }
+}
+

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { X, Plus, Trash2, Scan } from "lucide-react";
 import { createRecipe } from "../api/items";
 import BarcodeScanner from "./BarcodeScanner";
+import { PhotoUploadField, DEFAULT_RECIPE_PHOTO } from "./PhotoUpload";
 
 const C = {
   bg: "#f7f8ef",
@@ -290,12 +291,13 @@ export default function CreateRecipeModal({
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>Photo URL</label>
-                  <input
-                    style={inputStyle}
-                    placeholder="https://images.unsplash.com/..."
+                  <label style={labelStyle}>Photo</label>
+                  <PhotoUploadField
                     value={form.photo_url}
-                    onChange={handleFormChange("photo_url")}
+                    onChange={(url) =>
+                      setForm((prev) => ({ ...prev, photo_url: url }))
+                    }
+                    userId={userId}
                   />
                 </div>
                 <div className="grid grid-cols-4 gap-2">
