@@ -47,6 +47,9 @@ export function PhotoUploadField({ value, onChange, userId }) {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const API_URL = (
+    import.meta.env.VITE_API_URL || "http://localhost:3001/api"
+  ).replace(/\/$/, "");
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
@@ -189,14 +192,14 @@ export function EditPhotoButton({ recipeId, userId, currentPhoto, onUpdated }) {
       const url = await uploadPhotoToSupabase(file, userId);
 
       // Update recipe photo_url in the database
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/recipes/${recipeId}/photo`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ photo_url: url }),
-        },
-      );
+      const API_URL = (
+        import.meta.env.VITE_API_URL || "http://localhost:3001/api"
+      ).replace(/\/$/, "");
+      const res = await fetch(`${API_URL}/recipes/${recipeId}/photo`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photo_url: url }),
+      });
 
       if (!res.ok) throw new Error("Failed to update photo");
       onUpdated(url);

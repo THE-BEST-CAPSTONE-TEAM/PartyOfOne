@@ -404,10 +404,12 @@ export default function RecipesScreen({ onOpenRecipe, userId }) {
 
   // Fetch meals types for create modal
   const [mealTypes, setMealTypes] = useState([]);
+  const API_URL = (
+    import.meta.env.VITE_API_URL || "http://localhost:3001/api"
+  ).replace(/\/$/, "");
+
   useEffect(() => {
-    fetch(
-      `${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/meal-types`,
-    )
+    fetch(`${API_URL}/meal-types`)
       .then((r) => r.json())
       .then(setMealTypes)
       .catch(() => {});
