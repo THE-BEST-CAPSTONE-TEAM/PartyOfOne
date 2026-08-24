@@ -26,9 +26,10 @@ function generateTiles(rows, cols) {
   }));
 }
 
+const isMobile = window.innerWidth < 768;
 function TiledBackground() {
-  const rows = 4;
-  const cols = 6;
+  const rows = isMobile ? 8 : 4;
+  const cols = isMobile ? 4 : 6;
   const tiles = useRef(generateTiles(rows, cols));
   const frameRef = useRef(null);
   const timeRef = useRef(0);
@@ -46,10 +47,10 @@ function TiledBackground() {
         tiles.current.map((tile) => ({
           x:
             Math.sin((timeRef.current / 1000) * tile.speedX + tile.offsetX) *
-            12,
+            (isMobile ? 5 : 12),
           y:
             Math.cos((timeRef.current / 1000) * tile.speedY + tile.offsetY) *
-            12,
+            (isMobile ? 5 : 12),
         })),
       );
       frameRef.current = requestAnimationFrame(animate);
@@ -78,8 +79,8 @@ function TiledBackground() {
             src={logo}
             alt=""
             style={{
-              width: 140,
-              height: 140,
+              width: isMobile ? 80 : 140,
+              height: isMobile ? 80 : 140,
               objectFit: "contain",
               opacity: tile.opacity,
               transform: `translate(${positions[i]?.x ?? 0}px, ${positions[i]?.y ?? 0}px) scale(${tile.scale})`,
