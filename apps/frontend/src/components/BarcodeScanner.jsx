@@ -25,24 +25,39 @@ async function lookupBarcode(upc) {
   if (!res.ok) throw new Error("Product not found");
   const data = await res.json();
   if (data.status === 0) throw new Error("Product not found in database");
+
   const p = data.product;
   const nutriments = p.nutriments || {};
+
+  // Try to get serving size in grams to calculate per-serving values
+  const servingQty = nutriments["serving_size"] || null;
+
+  // Helper — prefer _serving, then calculate from 100g if serving size known,
+  // otherwise fall back to 100g values
+  const perServing = (key) => {
+    // Best case: explicit per-serving value
+    if (nutriments[`${key}_serving`] != null)
+      return nutriments[`${key}_serving`];
+    // Good case: calculate from serving size in grams
+    if (servingQty && nutriments[`${key}_100g`] != null) {
+      return (nutriments[`${key}_100g`] * servingQty) / 100;
+    }
+    // Fallback: divide 100g value by 100 to get per-gram estimate
+    // This won't be accurate but at least won't show 9000 calories
+    if (nutriments[`${key}_100g`] != null) {
+      return nutriments[`${key}_100g`] / 100;
+    }
+    return null;
+  };
+
   return {
     name: p.product_name || p.generic_name || null,
     brand: p.brands || null,
-    // Prefer per-serving values, fall back to per-100g
-    calories:
-      nutriments["energy-kcal_serving"] ??
-      nutriments["energy-kcal_100g"] ??
-      null,
-    protein:
-      nutriments["proteins_serving"] ?? nutriments["proteins_100g"] ?? null,
-    carbs:
-      nutriments["carbohydrates_serving"] ??
-      nutriments["carbohydrates_100g"] ??
-      null,
-    fat: nutriments["fat_serving"] ?? nutriments["fat_100g"] ?? null,
-    sugar: nutriments["sugars_serving"] ?? nutriments["sugars_100g"] ?? null,
+    calories: perServing("energy-kcal"),
+    protein: perServing("proteins"),
+    carbs: perServing("carbohydrates"),
+    fat: perServing("fat"),
+    sugar: perServing("sugars"),
     servingSize: p.serving_size || null,
     image: p.image_small_url || p.image_url || null,
   };
@@ -367,6 +382,9 @@ export default function BarcodeScanner({ onResult, onClose }) {
             </div>
           </div>
         )}
+        <p className="text-[9px] mb-2" style={{ ...sans, color: C.faint }}>
+          * Values may be approximate. Verify with product label.
+        </p>
 
         {/* Retry on error */}
         {error && !result && (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Calendar,
   BookOpen,
@@ -183,6 +183,18 @@ export function Sidebar({ active, onNavigate }) {
   );
 }
 
+export function EmptySlot({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="rounded-xl flex items-center justify-center h-8 w-full flex-shrink-0 transition-colors"
+      style={{ border: `1px dashed ${C.line}`, color: C.faint }}
+    >
+      <Plus size={14} />
+    </button>
+  );
+}
+
 // ── Meal Card ─────────────────────────────────
 
 export function MealCard({
@@ -193,10 +205,12 @@ export function MealCard({
   onDragStart,
   onDragEnd,
   isDragging,
+  isSelected, // ✅ new
+  onTapSelect,
 }) {
   const photo =
     meal.photo_url ||
-    "https://images.unsplash.com/photo-1614548540093-6f7dfceed46b?w=600&q=80?w=400&q=80";
+    "https://images.unsplash.com/photo-1614548540093-6f7dfceed46b?w=600&q=80";
 
   return (
     <div className="relative group">
@@ -207,14 +221,26 @@ export function MealCard({
           onDragStart(entry);
         }}
         onDragEnd={onDragEnd}
-        onClick={() => onOpen(meal)}
-        className="text-left rounded-xl overflow-hidden w-full cursor-grab active:cursor-grabbing"
+        onClick={() => {
+          if (onTapSelect && window.innerWidth < 768) {
+            onTapSelect(entry);
+          } else {
+            onOpen(meal);
+          }
+        }}
+        className="text-left rounded-xl overflow-hidden w-full cursor-grab active:cursor-grabbing select-none"
         style={{
           background: C.card,
-          border: `1px solid ${C.line}`,
+          border: `${isSelected ? "2px" : "1px"} solid ${isSelected ? C.primary : C.line}`,
           opacity: isDragging ? 0.4 : 1,
-          transform: isDragging ? "scale(0.97)" : "scale(1)",
+          transform: isDragging
+            ? "scale(0.97)"
+            : isSelected
+              ? "scale(1.02)"
+              : "scale(1)",
           transition: "opacity 0.15s, transform 0.15s",
+          userSelect: "none",
+          WebkitUserSelect: "none",
         }}
       >
         <div className="h-16 w-full overflow-hidden pointer-events-none">
@@ -249,18 +275,6 @@ export function MealCard({
   );
 }
 
-export function EmptySlot({ onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="rounded-xl flex items-center justify-center h-8 w-full flex-shrink-0 transition-colors"
-      style={{ border: `1px dashed ${C.line}`, color: C.faint }}
-    >
-      <Plus size={14} />
-    </button>
-  );
-}
-
 // ── Meal Time Group ───────────────────────────
 // Groups cards under a labelled section per meal time
 
@@ -274,6 +288,9 @@ function MealTimeGroup({
   onDragEnd,
   onDrop,
   onAddClick,
+  selectedEntry, // ✅ new
+  onTapSelect, // ✅ new
+  onTapDrop, // ✅ new
 }) {
   const meta = MEAL_META[mealTime] || {
     label: mealTime,
@@ -315,13 +332,17 @@ function MealTimeGroup({
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             isDragging={dragState.dragging?.id === entry.id}
+            isSelected={selectedEntry?.id === entry.id} // ✅ new
+            onTapSelect={onTapSelect}
           />
         ) : null,
       )}
 
-      {/* Drop zone for this meal time when dragging */}
+      {/* Drop zone for desktop drag */}
       {dragState.dragging && (
         <div
+          data-mealtime={mealTime}
+          data-dropzone="true"
           className="rounded-xl flex items-center justify-center transition-all duration-150"
           style={{
             height: isOver ? 36 : 20,
@@ -347,6 +368,24 @@ function MealTimeGroup({
           )}
         </div>
       )}
+
+      {/* Mobile tap target when entry selected */}
+      {selectedEntry && (
+        <button
+          onClick={() => onTapDrop(mealTime)}
+          className="rounded-xl flex items-center justify-center w-full transition-all"
+          style={{
+            height: 36,
+            border: `1px dashed ${C.primary}`,
+            background: `${C.primary}10`,
+            color: C.primary,
+          }}
+        >
+          <p className="text-[9px] font-semibold" style={{ ...sans }}>
+            Move here
+          </p>
+        </button>
+      )}
     </div>
   );
 }
@@ -364,6 +403,9 @@ function DayColumn({
   onDragEnd,
   onDrop,
   onAddClick,
+  selectedEntry, // ✅ new
+  onTapSelect, // ✅ new
+  onTapDrop,
 }) {
   // Sort entries by meal time order and group them
   const grouped = {};
@@ -384,6 +426,7 @@ function DayColumn({
 
   return (
     <div
+      data-daykey={dayKey}
       className="group rounded-2xl p-2.5 flex flex-col gap-2.5"
       style={{
         background: C.card,
@@ -411,6 +454,9 @@ function DayColumn({
           onDragEnd={onDragEnd}
           onDrop={(mealTime) => onDrop(dayKey, mealTime)}
           onAddClick={(mealTime) => onAddClick(dayKey, mealTime)}
+          selectedEntry={selectedEntry} // ✅ new
+          onTapSelect={onTapSelect} // ✅ new
+          onTapDrop={(mealTime) => onTapDrop(dayKey, mealTime)} // ✅ new
         />
       ))}
 
@@ -711,6 +757,7 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [dragState, setDragState] = useState({ dragging: null, overDay: null });
+  const [selectedEntry, setSelectedEntry] = useState(null); // mobile tap-to-move
 
   const today = new Date();
   const day = today.getDay();
@@ -809,6 +856,42 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
     setDragState({ dragging: null, overDay: null });
   };
 
+  const isMobile = window.innerWidth < 768;
+
+  const handleTapSelect = (entry) => {
+    if (!isMobile) return;
+    if (selectedEntry?.id === entry.id) {
+      setSelectedEntry(null); // tap same card to deselect
+    } else {
+      setSelectedEntry(entry);
+    }
+  };
+
+  const handleTapDrop = async (targetDay, targetMealTime) => {
+    if (!selectedEntry) return;
+    const sourceDay = selectedEntry.day_of_week;
+    const sourceMealTime = selectedEntry.meal_time;
+
+    if (sourceDay === targetDay && sourceMealTime === targetMealTime) {
+      setSelectedEntry(null);
+      return;
+    }
+
+    try {
+      await addMealPlanEntry(
+        userId,
+        selectedEntry.recipe_id,
+        targetDay,
+        targetMealTime,
+      );
+      await removeMealPlanEntry(selectedEntry.id);
+      loadPlan();
+    } catch (err) {
+      console.error("Failed to move meal:", err);
+    }
+    setSelectedEntry(null);
+  };
+
   return (
     <div
       className="flex-1 overflow-y-auto px-8 py-7"
@@ -830,6 +913,14 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
           {dragState.dragging && (
             <p className="text-xs" style={{ ...sans, color: C.muted }}>
               Drop on a meal slot to move
+            </p>
+          )}
+          {selectedEntry && (
+            <p
+              className="text-xs font-semibold"
+              style={{ ...sans, color: C.primary }}
+            >
+              Tap a slot to move {selectedEntry.recipes?.name}
             </p>
           )}
           <button
@@ -891,6 +982,9 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
               onDragEnd={handleDragEnd}
               onDrop={handleDrop}
               onAddClick={(day, mealTime) => setAddModal({ day, mealTime })}
+              selectedEntry={selectedEntry} // ✅ new
+              onTapSelect={handleTapSelect} // ✅ new
+              onTapDrop={handleTapDrop} // ✅ new
             />
           ))}
         </div>
