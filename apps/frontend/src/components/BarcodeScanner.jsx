@@ -30,12 +30,19 @@ async function lookupBarcode(upc) {
   return {
     name: p.product_name || p.generic_name || null,
     brand: p.brands || null,
+    // Prefer per-serving values, fall back to per-100g
     calories:
-      nutriments["energy-kcal_100g"] ?? nutriments["energy-kcal"] ?? null,
-    protein: nutriments["proteins_100g"] ?? null,
-    carbs: nutriments["carbohydrates_100g"] ?? null,
-    fat: nutriments["fat_100g"] ?? null,
-    sugar: nutriments["sugars_100g"] ?? null,
+      nutriments["energy-kcal_serving"] ??
+      nutriments["energy-kcal_100g"] ??
+      null,
+    protein:
+      nutriments["proteins_serving"] ?? nutriments["proteins_100g"] ?? null,
+    carbs:
+      nutriments["carbohydrates_serving"] ??
+      nutriments["carbohydrates_100g"] ??
+      null,
+    fat: nutriments["fat_serving"] ?? nutriments["fat_100g"] ?? null,
+    sugar: nutriments["sugars_serving"] ?? nutriments["sugars_100g"] ?? null,
     servingSize: p.serving_size || null,
     image: p.image_small_url || p.image_url || null,
   };
@@ -286,7 +293,7 @@ export default function BarcodeScanner({ onResult, onClose }) {
                 {
                   label: "Cal",
                   value: result.calories,
-                  unit: "kcal",
+                  unit: "",
                   color: C.primary,
                 },
                 {
