@@ -196,7 +196,7 @@ export function MealCard({
 }) {
   const photo =
     meal.photo_url ||
-    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80";
+    "https://images.unsplash.com/photo-1614548540093-6f7dfceed46b?w=600&q=80?w=400&q=80";
 
   return (
     <div className="relative group">

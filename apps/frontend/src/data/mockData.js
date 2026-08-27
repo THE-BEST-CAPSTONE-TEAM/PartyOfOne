@@ -3,7 +3,7 @@ export const RECIPE = {
     tags: ["Vegetarian", "Mediterranean"],
     time: "20 min",
     cal: "340 cal",
-    photo: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=900&q=80",
+    photo: "https://images.unsplash.com/photo-1614548540093-6f7dfceed46b?w=600&q=80?w=900&q=80",
     ingredients: [
         { id: 1, name: "Baby spinach", qty: "3 cups" },
         { id: 2, name: "Cherry tomatoes, halved", qty: "1 cup" },

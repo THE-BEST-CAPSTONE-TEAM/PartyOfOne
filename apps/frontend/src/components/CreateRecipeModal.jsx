@@ -236,7 +236,7 @@ export default function CreateRecipeModal({
   return (
     <>
       <div
-        className="absolute inset-0 z-20 flex items-center justify-center p-6"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
         style={{ background: "rgba(43,43,43,0.45)" }}
       >
         <div
@@ -245,7 +245,7 @@ export default function CreateRecipeModal({
         >
           {/* Header */}
           <div
-            className="flex items-center justify-between px-6 py-4 flex-shrink-0"
+            className="flex items-center justify-between px-4 md:px-6 py-4 flex-shrink-0"
             style={{ borderBottom: `1px solid ${C.line}` }}
           >
             <h2
@@ -264,7 +264,8 @@ export default function CreateRecipeModal({
           </div>
 
           {/* Scrollable body */}
-          <div className="overflow-y-auto px-6 py-4 flex flex-col gap-4">
+          <div className="overflow-y-auto px-3 md:px-6 py-4 flex flex-col gap-4">
+            {" "}
             {/* Basic info */}
             <div>
               <p style={sectionStyle}>Basic Info</p>
@@ -390,7 +391,6 @@ export default function CreateRecipeModal({
                 </div>
               </div>
             </div>
-
             {/* Ingredients */}
             <div>
               <p style={sectionStyle}>Ingredients</p>
@@ -406,67 +406,76 @@ export default function CreateRecipeModal({
                   >
                     {/* Main row */}
                     <div
-                      className="grid gap-1.5 items-center mb-2"
+                      key={idx}
+                      className="rounded-xl p-3 overflow-x-auto"
                       style={{
-                        gridTemplateColumns: "2fr 1fr 1fr 2fr auto auto",
+                        background: C.card,
+                        border: `1px solid ${C.line}`,
                       }}
                     >
-                      <input
-                        style={inputStyle}
-                        placeholder="Ingredient"
-                        value={ing.name}
-                        onChange={(e) =>
-                          handleIngredientChange(idx, "name", e.target.value)
-                        }
-                      />
-                      <input
-                        style={inputStyle}
-                        placeholder="Qty"
-                        value={ing.quantity}
-                        onChange={(e) =>
-                          handleIngredientChange(
-                            idx,
-                            "quantity",
-                            e.target.value,
-                          )
-                        }
-                      />
-                      <input
-                        style={inputStyle}
-                        placeholder="Unit"
-                        value={ing.unit}
-                        onChange={(e) =>
-                          handleIngredientChange(idx, "unit", e.target.value)
-                        }
-                      />
-                      <input
-                        style={inputStyle}
-                        placeholder="Notes"
-                        value={ing.notes}
-                        onChange={(e) =>
-                          handleIngredientChange(idx, "notes", e.target.value)
-                        }
-                      />
-
-                      {/* Barcode scan button */}
-                      <button
-                        onClick={() => setScanningFor(idx)}
-                        title="Scan barcode to fill macros"
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                        style={{ background: C.sand }}
+                      <div
+                        className="grid gap-1.5 items-center mb-2 overflow-x-auto"
+                        style={{
+                          gridTemplateColumns: "2fr 1fr 1fr 2fr auto auto",
+                          minWidth: 400,
+                        }}
                       >
-                        <Scan size={14} color={C.muted} />
-                      </button>
-
-                      <button
-                        onClick={() => removeIngredient(idx)}
-                        disabled={ingredients.length === 1}
-                      >
-                        <Trash2
-                          size={14}
-                          color={ingredients.length === 1 ? C.faint : C.muted}
+                        {" "}
+                        <input
+                          style={inputStyle}
+                          placeholder="Ingredient"
+                          value={ing.name}
+                          onChange={(e) =>
+                            handleIngredientChange(idx, "name", e.target.value)
+                          }
                         />
-                      </button>
+                        <input
+                          style={inputStyle}
+                          placeholder="Qty"
+                          value={ing.quantity}
+                          onChange={(e) =>
+                            handleIngredientChange(
+                              idx,
+                              "quantity",
+                              e.target.value,
+                            )
+                          }
+                        />
+                        <input
+                          style={inputStyle}
+                          placeholder="Unit"
+                          value={ing.unit}
+                          onChange={(e) =>
+                            handleIngredientChange(idx, "unit", e.target.value)
+                          }
+                        />
+                        <input
+                          style={inputStyle}
+                          placeholder="Notes"
+                          value={ing.notes}
+                          onChange={(e) =>
+                            handleIngredientChange(idx, "notes", e.target.value)
+                          }
+                        />
+                        {/* Barcode scan button */}
+                        <button
+                          onClick={() => setScanningFor(idx)}
+                          title="Scan barcode to fill macros"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                          style={{ background: C.sand }}
+                        >
+                          <Scan size={14} color={C.muted} />
+                        </button>
+                        <button
+                          onClick={() => removeIngredient(idx)}
+                          disabled={ingredients.length === 1}
+                        >
+                          <Trash2
+                            size={14}
+                            color={ingredients.length === 1 ? C.faint : C.muted}
+                          />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Macros toggle */}
@@ -570,7 +579,6 @@ export default function CreateRecipeModal({
                 </button>
               </div>
             </div>
-
             {/* Steps */}
             <div>
               <p style={sectionStyle}>Preparation Steps</p>
@@ -619,7 +627,6 @@ export default function CreateRecipeModal({
                 </button>
               </div>
             </div>
-
             {/* Tags */}
             <div>
               <p style={sectionStyle}>Tags</p>
@@ -648,7 +655,7 @@ export default function CreateRecipeModal({
 
           {/* Footer */}
           <div
-            className="px-6 py-4 flex items-center justify-between flex-shrink-0"
+            className="px-4 md:px-6 py-4 flex items-center justify-between flex-shrink-0"
             style={{ borderTop: `1px solid ${C.line}` }}
           >
             {error ? (

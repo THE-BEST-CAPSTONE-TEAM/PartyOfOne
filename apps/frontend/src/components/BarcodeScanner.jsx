@@ -25,10 +25,8 @@ async function lookupBarcode(upc) {
   if (!res.ok) throw new Error("Product not found");
   const data = await res.json();
   if (data.status === 0) throw new Error("Product not found in database");
-
   const p = data.product;
   const nutriments = p.nutriments || {};
-
   return {
     name: p.product_name || p.generic_name || null,
     brand: p.brands || null,
@@ -56,7 +54,6 @@ export default function BarcodeScanner({ onResult, onClose }) {
   useEffect(() => {
     const reader = new BrowserMultiFormatReader();
     readerRef.current = reader;
-
     reader
       .decodeFromVideoDevice(null, videoRef.current, async (res, err) => {
         if (res && scanning) {
@@ -80,7 +77,6 @@ export default function BarcodeScanner({ onResult, onClose }) {
       .catch(() => {
         setCameraError(true);
       });
-
     return () => {
       reader.reset();
     };
@@ -102,54 +98,56 @@ export default function BarcodeScanner({ onResult, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(43,43,43,0.7)" }}
     >
       <div
         className="rounded-2xl overflow-hidden shadow-2xl w-full"
-        style={{ background: C.card, maxWidth: 400 }}
+        style={{
+          background: C.card,
+          maxWidth: 380,
+          maxHeight: "90vh",
+          overflowY: "auto",
+        }}
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between px-5 py-4"
+          className="flex items-center justify-between px-4 py-3"
           style={{ borderBottom: `1px solid ${C.line}` }}
         >
           <div className="flex items-center gap-2">
-            <Camera size={18} color={C.charcoal} />
+            <Camera size={16} color={C.charcoal} />
             <h3
-              className="text-base font-semibold"
+              className="text-sm font-semibold"
               style={{ ...serif, color: C.charcoal }}
             >
               Scan Barcode
             </h3>
           </div>
           <button onClick={onClose}>
-            <X size={18} color={C.muted} />
+            <X size={16} color={C.muted} />
           </button>
         </div>
 
-        {/* Camera view */}
-        <div className="relative" style={{ background: "#000", height: 240 }}>
+        {/* Camera view — shorter on mobile */}
+        <div className="relative" style={{ background: "#000", height: 200 }}>
           <video
             ref={videoRef}
             className="w-full h-full object-cover"
             style={{ display: cameraError ? "none" : "block" }}
           />
-
-          {/* Scanning overlay */}
           {scanning && !cameraError && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div
                 className="rounded-xl"
                 style={{
-                  width: 220,
-                  height: 120,
+                  width: 200,
+                  height: 100,
                   border: `2px solid ${C.primary}`,
                   boxShadow: `0 0 0 9999px rgba(0,0,0,0.4)`,
                   position: "relative",
                 }}
               >
-                {/* Corner decorations */}
                 {[
                   {
                     top: -2,
@@ -180,16 +178,14 @@ export default function BarcodeScanner({ onResult, onClose }) {
                     key={i}
                     style={{
                       position: "absolute",
-                      width: 20,
-                      height: 20,
+                      width: 16,
+                      height: 16,
                       border: `3px solid ${C.primary}`,
                       borderRadius: 3,
                       ...style,
                     }}
                   />
                 ))}
-
-                {/* Scanning line animation */}
                 <div
                   style={{
                     position: "absolute",
@@ -203,24 +199,17 @@ export default function BarcodeScanner({ onResult, onClose }) {
                   }}
                 />
               </div>
-              <style>{`
-                @keyframes scan {
-                  0%, 100% { transform: translateY(-40px); opacity: 0.3; }
-                  50% { transform: translateY(40px); opacity: 1; }
-                }
-              `}</style>
+              <style>{`@keyframes scan { 0%, 100% { transform: translateY(-30px); opacity: 0.3; } 50% { transform: translateY(30px); opacity: 1; } }`}</style>
             </div>
           )}
-
           {cameraError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
-              <Camera size={32} color={C.faint} />
+              <Camera size={28} color={C.faint} />
               <p
-                className="text-sm text-center"
+                className="text-xs text-center"
                 style={{ ...sans, color: C.faint }}
               >
-                Camera not available. Make sure you've granted camera
-                permission.
+                Camera not available. Check permissions.
               </p>
             </div>
           )}
@@ -228,18 +217,18 @@ export default function BarcodeScanner({ onResult, onClose }) {
 
         {/* Status bar */}
         <div
-          className="px-5 py-3 flex items-center gap-2"
+          className="px-4 py-2 flex items-center gap-2"
           style={{ borderBottom: `1px solid ${C.line}`, background: C.bg }}
         >
           {loading ? (
-            <RefreshCw size={14} color={C.muted} className="animate-spin" />
+            <RefreshCw size={12} color={C.muted} className="animate-spin" />
           ) : error ? (
-            <AlertCircle size={14} color={C.primary} />
+            <AlertCircle size={12} color={C.primary} />
           ) : result ? (
-            <CheckCircle size={14} color={C.green} />
+            <CheckCircle size={12} color={C.green} />
           ) : (
             <div
-              className="w-3.5 h-3.5 rounded-full animate-pulse"
+              className="w-3 h-3 rounded-full animate-pulse"
               style={{ background: C.primary }}
             />
           )}
@@ -253,62 +242,61 @@ export default function BarcodeScanner({ onResult, onClose }) {
             {loading
               ? "Looking up product..."
               : error
-                ? `Not found — try again`
+                ? "Not found — try again"
                 : result
                   ? `Found: ${result.name || "Unknown product"}`
                   : status}
           </p>
         </div>
 
-        {/* Result */}
+        {/* ── Result — condensed layout ── */}
         {result && (
-          <div className="px-5 py-4">
-            {result.image && (
-              <div className="flex items-center gap-3 mb-3">
+          <div className="px-4 py-3">
+            {/* Product info — single compact row */}
+            <div className="flex items-center gap-2 mb-3">
+              {result.image && (
                 <img
                   src={result.image}
                   alt={result.name}
-                  className="w-12 h-12 rounded-xl object-contain"
-                  style={{ background: C.sand }}
+                  className="rounded-lg object-contain flex-shrink-0"
+                  style={{ width: 40, height: 40, background: C.sand }}
                 />
-                <div>
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ ...sans, color: C.charcoal }}
-                  >
-                    {result.name || "Unknown product"}
-                  </p>
-                  {result.brand && (
-                    <p className="text-xs" style={{ ...sans, color: C.muted }}>
-                      {result.brand}
-                    </p>
-                  )}
-                  {result.servingSize && (
-                    <p className="text-xs" style={{ ...sans, color: C.faint }}>
-                      Per {result.servingSize}
-                    </p>
-                  )}
-                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p
+                  className="text-xs font-semibold truncate"
+                  style={{ ...sans, color: C.charcoal }}
+                >
+                  {result.name || "Unknown product"}
+                </p>
+                <p className="text-[10px]" style={{ ...sans, color: C.faint }}>
+                  {[
+                    result.brand,
+                    result.servingSize ? `Per ${result.servingSize}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
               </div>
-            )}
+            </div>
 
-            {/* Macro grid */}
-            <div className="grid grid-cols-5 gap-2 mb-4">
+            {/* Macro row — horizontal pill style instead of grid */}
+            <div className="flex gap-1.5 mb-3">
               {[
                 {
-                  label: "Calories",
+                  label: "Cal",
                   value: result.calories,
                   unit: "kcal",
                   color: C.primary,
                 },
                 {
-                  label: "Protein",
+                  label: "Pro",
                   value: result.protein,
                   unit: "g",
                   color: C.green,
                 },
                 {
-                  label: "Carbs",
+                  label: "Carb",
                   value: result.carbs,
                   unit: "g",
                   color: "#f59e0b",
@@ -328,17 +316,20 @@ export default function BarcodeScanner({ onResult, onClose }) {
               ].map(({ label, value, unit, color }) => (
                 <div
                   key={label}
-                  className="rounded-xl p-2 text-center"
+                  className="flex-1 rounded-xl py-1.5 text-center"
                   style={{ background: C.bg }}
                 >
-                  <p className="text-sm font-bold" style={{ ...sans, color }}>
+                  <p className="text-xs font-bold" style={{ ...sans, color }}>
                     {value !== null ? Math.round(value) : "—"}
                   </p>
-                  <p className="text-[9px]" style={{ ...sans, color: C.faint }}>
+                  <p
+                    className="text-[8px] leading-tight"
+                    style={{ ...sans, color: C.faint }}
+                  >
                     {unit}
                   </p>
                   <p
-                    className="text-[9px] font-semibold"
+                    className="text-[8px] font-semibold leading-tight"
                     style={{ ...sans, color: C.muted }}
                   >
                     {label}
@@ -350,7 +341,7 @@ export default function BarcodeScanner({ onResult, onClose }) {
             <div className="flex gap-2">
               <button
                 onClick={handleRetry}
-                className="flex-1 py-2.5 rounded-full text-xs font-semibold"
+                className="flex-1 py-2 rounded-full text-xs font-semibold"
                 style={{
                   ...sans,
                   border: `1.5px solid ${C.line}`,
@@ -361,7 +352,7 @@ export default function BarcodeScanner({ onResult, onClose }) {
               </button>
               <button
                 onClick={handleUse}
-                className="flex-1 py-2.5 rounded-full text-xs font-semibold"
+                className="flex-1 py-2 rounded-full text-xs font-semibold"
                 style={{ ...sans, background: C.primary, color: C.onPrimary }}
               >
                 Use this data
@@ -372,17 +363,17 @@ export default function BarcodeScanner({ onResult, onClose }) {
 
         {/* Retry on error */}
         {error && !result && (
-          <div className="px-5 py-4">
+          <div className="px-4 py-3">
             <p
-              className="text-xs text-center mb-3"
+              className="text-xs text-center mb-2"
               style={{ ...sans, color: C.muted }}
             >
-              Product not found in Open Food Facts database. Try a different
-              item or enter macros manually.
+              Not found in Open Food Facts. Try another item or enter macros
+              manually.
             </p>
             <button
               onClick={handleRetry}
-              className="w-full py-2.5 rounded-full text-xs font-semibold"
+              className="w-full py-2 rounded-full text-xs font-semibold"
               style={{ ...sans, background: C.sand, color: C.muted }}
             >
               Try again
