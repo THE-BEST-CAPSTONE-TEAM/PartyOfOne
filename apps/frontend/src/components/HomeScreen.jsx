@@ -956,7 +956,7 @@ export function ThisWeekScreen({
                 ? `In ${weekOffset} Week${weekOffset > 1 ? "s" : ""}`
                 : `${Math.abs(weekOffset)} Week${Math.abs(weekOffset) > 1 ? "s" : ""} Ago`}
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => {
                 setWeekOffset((w) => w - 1);
@@ -964,12 +964,15 @@ export function ThisWeekScreen({
                 setLoading(true);
               }}
               disabled={!canGoBack}
-              className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity"
+              className="w-5 h-5 rounded-full flex items-center justify-center transition-opacity flex-shrink-0"
               style={{ background: C.sand, opacity: canGoBack ? 1 : 0.3 }}
             >
-              <ChevronLeft size={14} color={C.charcoal} />
+              <ChevronLeft size={11} color={C.charcoal} />
             </button>
-            <p className="text-sm" style={{ ...sans, color: C.muted }}>
+            <p
+              className="text-xs whitespace-nowrap"
+              style={{ ...sans, color: C.muted }}
+            >
               {weekLabel}
             </p>
             <button
@@ -979,10 +982,10 @@ export function ThisWeekScreen({
                 setLoading(true);
               }}
               disabled={!canGoForward}
-              className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity"
+              className="w-5 h-5 rounded-full flex items-center justify-center transition-opacity flex-shrink-0"
               style={{ background: C.sand, opacity: canGoForward ? 1 : 0.3 }}
             >
-              <ChevronRight size={14} color={C.charcoal} />
+              <ChevronRight size={11} color={C.charcoal} />
             </button>
           </div>
           <p className="text-xs md:hidden" style={{ ...sans, color: C.faint }}>
@@ -1007,7 +1010,7 @@ export function ThisWeekScreen({
           <button
             onClick={handleGenerateGroceryList}
             disabled={generating}
-            className="px-5 py-2.5 rounded-full text-sm font-semibold shadow-sm transition-all"
+            className="px-3 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold shadow-sm transition-all whitespace-nowrap"
             style={{
               ...sans,
               background: generated ? C.green : C.primary,
@@ -1015,11 +1018,16 @@ export function ThisWeekScreen({
               opacity: generating ? 0.7 : 1,
             }}
           >
-            {generating
-              ? "Generating..."
-              : generated
-                ? "✓ List ready!"
-                : "Generate grocery list"}
+            {generating ? (
+              "..."
+            ) : generated ? (
+              "✓ Ready!"
+            ) : (
+              <>
+                <span className="md:hidden">🛒 Generate</span>
+                <span className="hidden md:inline">Generate grocery list</span>
+              </>
+            )}
           </button>
         </div>
       </div>
