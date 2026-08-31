@@ -454,7 +454,7 @@ export default function GroceryListScreen({ userId, weekOffset = 0 }) {
   async function loadGroceryList() {
     setLoading(true);
     try {
-      const data = await fetchGroceryList(userId);
+      const data = await fetchGroceryList(userId, weekStartISO); // ✅
       setGroceryList(data);
     } catch (err) {
       setError(err.message);

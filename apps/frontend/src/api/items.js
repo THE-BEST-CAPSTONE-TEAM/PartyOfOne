@@ -80,8 +80,9 @@ export async function removeMealPlanEntry(entryId) {
 
 // ── GROCERY LIST ──────────────────────────────
 
-export async function fetchGroceryList(userId) {
-  const res = await fetch(`${API_BASE_URL}/grocery/${userId}`);
+export async function fetchGroceryList(userId, weekStart) {
+  const params = weekStart ? `?weekStart=${weekStart}` : "";
+  const res = await fetch(`${API_BASE_URL}/grocery/${userId}${params}`);
   if (!res.ok) throw new Error("Failed to fetch grocery list");
   return res.json();
 }

@@ -264,7 +264,7 @@ export async function getMealTypes(_req, res, next) {
 
 export async function generateGroceryList(req, res, next) {
   try {
-    const { userId, weekStart } = req.body; // ✅ accept specific week
+    const { userId, weekStart } = req.body; // ✅ accept weekStart
 
     let monday;
     if (weekStart) {
@@ -277,35 +277,6 @@ export async function generateGroceryList(req, res, next) {
       monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
       monday.setHours(0, 0, 0, 0);
     }
-
-    const mealPlan = await prisma.meal_plans.findFirst({
-      where: { user_id: userId, week_start: monday },
-    });
-
-    if (!mealPlan) return res.json(null);
-
-    const groceryList = await prisma.grocery_lists.findFirst({
-      where: { meal_plan_id: mealPlan.id },
-      include: {
-        grocery_list_items: { orderBy: { id: "asc" } },
-      },
-    });
-
-    res.json(groceryList);
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function generateGroceryList(req, res, next) {
-  try {
-    const { userId } = req.body;
-
-    const today = new Date();
-    const day = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-    monday.setHours(0, 0, 0, 0);
 
     // Get meal plan with all recipe ingredients
     const mealPlan = await prisma.meal_plans.findFirst({
@@ -365,6 +336,42 @@ export async function generateGroceryList(req, res, next) {
     });
 
     res.status(201).json(groceryList);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getGroceryList(req, res, next) {
+  try {
+    const { userId } = req.params;
+    const { weekStart } = req.query; // ✅ accept weekStart
+
+    let monday;
+    if (weekStart) {
+      monday = new Date(weekStart);
+      monday.setHours(0, 0, 0, 0);
+    } else {
+      const today = new Date();
+      const day = today.getDay();
+      monday = new Date(today);
+      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+      monday.setHours(0, 0, 0, 0);
+    }
+
+    const mealPlan = await prisma.meal_plans.findFirst({
+      where: { user_id: userId, week_start: monday },
+    });
+
+    if (!mealPlan) return res.json(null);
+
+    const groceryList = await prisma.grocery_lists.findFirst({
+      where: { meal_plan_id: mealPlan.id },
+      include: {
+        grocery_list_items: { orderBy: { id: "asc" } },
+      },
+    });
+
+    res.json(groceryList);
   } catch (error) {
     next(error);
   }
