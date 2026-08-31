@@ -26,6 +26,8 @@ export default function App() {
   const [recipeOpen, setRecipeOpen] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
 
+  const [weekOffset, setWeekOffset] = useState(0);
+
   const userId = session?.user?.id;
 
   useEffect(() => {
@@ -72,14 +74,19 @@ export default function App() {
     switch (active) {
       case "week":
         return (
-          <ThisWeekScreen onOpenRecipe={handleOpenRecipe} userId={userId} />
+          <ThisWeekScreen
+            onOpenRecipe={handleOpenRecipe}
+            userId={userId}
+            weekOffset={weekOffset}
+            setWeekOffset={setWeekOffset}
+          />
         );
       case "recipes":
         return (
           <RecipesScreen onOpenRecipe={handleOpenRecipe} userId={userId} />
         );
       case "grocery":
-        return <GroceryListScreen userId={userId} />;
+        return <GroceryListScreen userId={userId} weekOffset={weekOffset} />;
       case "saved":
         return <SavedScreen onOpenRecipe={handleOpenRecipe} userId={userId} />;
       case "settings":
@@ -88,6 +95,7 @@ export default function App() {
             session={session}
             onLogout={handleLogout}
             userId={userId}
+            weekOffset={weekOffset}
           />
         );
       default:

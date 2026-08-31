@@ -53,17 +53,18 @@ export async function createRecipe(data) {
 
 // ── MEAL PLAN ─────────────────────────────────
 
-export async function fetchMealPlan(userId) {
-  const res = await fetch(`${API_BASE_URL}/meal-plan/${userId}`);
+export async function fetchMealPlan(userId, weekStart) {
+  const params = weekStart ? `?weekStart=${weekStart}` : "";
+  const res = await fetch(`${API_BASE_URL}/meal-plan/${userId}${params}`);
   if (!res.ok) throw new Error("Failed to fetch meal plan");
   return res.json();
 }
 
-export async function addMealPlanEntry(userId, recipeId, dayOfWeek, mealTime) {
+export async function addMealPlanEntry(userId, recipeId, dayOfWeek, mealTime, weekStart) {
   const res = await fetch(`${API_BASE_URL}/meal-plan/entry`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, recipeId, dayOfWeek, mealTime }),
+    body: JSON.stringify({ userId, recipeId, dayOfWeek, mealTime, weekStart }),
   });
   if (!res.ok) throw new Error("Failed to add meal plan entry");
   return res.json();
@@ -85,11 +86,11 @@ export async function fetchGroceryList(userId) {
   return res.json();
 }
 
-export async function generateGroceryList(userId) {
+export async function generateGroceryList(userId, weekStart) {
   const res = await fetch(`${API_BASE_URL}/grocery/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId }),
+    body: JSON.stringify({ userId, weekStart }),
   });
   if (!res.ok) throw new Error("Failed to generate grocery list");
   return res.json();

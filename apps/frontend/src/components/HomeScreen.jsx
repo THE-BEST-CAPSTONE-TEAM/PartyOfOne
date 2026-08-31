@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Calendar,
   BookOpen,
@@ -11,6 +11,8 @@ import {
   Plus,
   Minus,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   fetchMealPlan,
@@ -205,12 +207,38 @@ export function MealCard({
   onDragStart,
   onDragEnd,
   isDragging,
-  isSelected, // ✅ new
+  isSelected,
   onTapSelect,
 }) {
   const photo =
     meal.photo_url ||
     "https://images.unsplash.com/photo-1614548540093-6f7dfceed46b?w=600&q=80";
+
+  const lastTapTime = useRef(0);
+  const lastTapTimer = useRef(null);
+
+  const handleClick = () => {
+    if (window.innerWidth >= 768) {
+      onOpen(meal);
+      return;
+    }
+
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapTime.current;
+    lastTapTime.current = now;
+
+    if (timeSinceLastTap < 300) {
+      // Double tap — select for moving
+      clearTimeout(lastTapTimer.current);
+      onTapSelect(entry);
+    } else {
+      // Single tap — wait to see if double tap follows
+      clearTimeout(lastTapTimer.current);
+      lastTapTimer.current = setTimeout(() => {
+        onOpen(meal);
+      }, 300);
+    }
+  };
 
   return (
     <div className="relative group">
@@ -221,13 +249,7 @@ export function MealCard({
           onDragStart(entry);
         }}
         onDragEnd={onDragEnd}
-        onClick={() => {
-          if (onTapSelect && window.innerWidth < 768) {
-            onTapSelect(entry);
-          } else {
-            onOpen(meal);
-          }
-        }}
+        onClick={handleClick}
         className="text-left rounded-xl overflow-hidden w-full cursor-grab active:cursor-grabbing select-none"
         style={{
           background: C.card,
@@ -370,7 +392,8 @@ function MealTimeGroup({
       )}
 
       {/* Mobile tap target when entry selected */}
-      {selectedEntry && (
+      {/* Mobile tap target when entry selected */}
+      {selectedEntry && window.innerWidth < 768 && (
         <button
           onClick={() => onTapDrop(mealTime)}
           className="rounded-xl flex items-center justify-center w-full transition-all"
@@ -487,6 +510,7 @@ function AddToWeekModal({
   defaultMealTime,
   onClose,
   onAdded,
+  weekStart,
 }) {
   const [selectedDay, setSelectedDay] = useState(defaultDay || DAYS[0]);
   const [selectedMealTime, setSelectedMealTime] = useState(
@@ -515,20 +539,16 @@ function AddToWeekModal({
   );
 
   const handleAdd = async () => {
-    const recipeToAdd = selectedRecipe || recipe;
-    if (!recipeToAdd) {
-      setError("Please select a recipe");
-      return;
-    }
     setSaving(true);
     setError("");
     try {
       await addMealPlanEntry(
         userId,
-        recipeToAdd.id,
+        recipe.id,
         selectedDay,
         selectedMealTime,
-      );
+        weekStart,
+      ); // ✅
       onAdded();
       onClose();
     } catch (err) {
@@ -540,7 +560,7 @@ function AddToWeekModal({
 
   return (
     <div
-      className="absolute inset-0 z-30 flex items-center justify-center"
+      className="fixed inset-0 z-30 flex items-center justify-center"
       style={{ background: "rgba(43,43,43,0.5)" }}
       onClick={onClose}
     >
@@ -750,7 +770,13 @@ function AddToWeekModal({
 
 // ── This Week Screen ──────────────────────────
 
-export function ThisWeekScreen({ onOpenRecipe, userId }) {
+export function ThisWeekScreen({
+  onOpenRecipe,
+  userId,
+  weekOffset,
+  setWeekOffset,
+}) {
+  console.log("ThisWeekScreen rendering");
   const [mealPlan, setMealPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [addModal, setAddModal] = useState(null); // { day, mealTime, recipe? }
@@ -759,19 +785,36 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
   const [dragState, setDragState] = useState({ dragging: null, overDay: null });
   const [selectedEntry, setSelectedEntry] = useState(null); // mobile tap-to-move
 
-  const today = new Date();
-  const day = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
+  // ✅ Week offset — 0 = current week, 1 = next week, -1 = last week etc
+  // const [weekOffset, setWeekOffset] = useState(0);
+
+  // ✅ Calculate monday for any offset
+  const getMonday = (offset = 0) => {
+    const today = new Date();
+    const day = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  };
+
+  const currentMonday = getMonday(weekOffset);
+  const currentSunday = new Date(currentMonday);
+  currentSunday.setDate(currentMonday.getDate() + 6);
+
   const fmt = (d) =>
     d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const weekLabel = `${fmt(monday)} – ${fmt(sunday)}`;
+  const weekLabel = `${fmt(currentMonday)} – ${fmt(currentSunday)}`;
+  const weekStartISO = currentMonday.toISOString();
+
+  // ✅ Limits
+  const isCurrentWeek = weekOffset === 0;
+  const canGoBack = weekOffset > -4; // up to 4 weeks back
+  const canGoForward = weekOffset < 4; // up to 4 weeks forward
 
   const loadPlan = () => {
     if (!userId) return;
-    fetchMealPlan(userId)
+    fetchMealPlan(userId, weekStartISO)
       .then(setMealPlan)
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -779,7 +822,7 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
 
   useEffect(() => {
     loadPlan();
-  }, [userId]);
+  }, [userId, weekOffset]); // ✅ reload when week changes
 
   const entriesByDay = {};
   DAYS.forEach((d) => {
@@ -792,6 +835,9 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
       }
     }
   }
+
+  console.log("mealPlan:", mealPlan);
+  console.log("entriesByDay:", entriesByDay);
 
   const handleRemoveEntry = async (entry) => {
     try {
@@ -812,7 +858,7 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
     setGenerating(true);
     setGenerated(false);
     try {
-      await generateGroceryList(userId);
+      await generateGroceryList(userId, weekStartISO); // ✅ pass weekStart
       setGenerated(true);
       setTimeout(() => setGenerated(false), 3000);
     } catch (err) {
@@ -845,7 +891,9 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
         sourceEntry.recipe_id,
         targetDay,
         targetMealTime,
+        weekStartISO,
       );
+
       // Remove from source
       await removeMealPlanEntry(sourceEntry.id);
       loadPlan();
@@ -856,10 +904,8 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
     setDragState({ dragging: null, overDay: null });
   };
 
-  const isMobile = window.innerWidth < 768;
-
   const handleTapSelect = (entry) => {
-    if (!isMobile) return;
+    if (window.innerWidth >= 768) return;
     if (selectedEntry?.id === entry.id) {
       setSelectedEntry(null); // tap same card to deselect
     } else {
@@ -883,6 +929,7 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
         selectedEntry.recipe_id,
         targetDay,
         targetMealTime,
+        weekStartISO,
       );
       await removeMealPlanEntry(selectedEntry.id);
       loadPlan();
@@ -903,12 +950,46 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
             className="text-2xl mb-1"
             style={{ ...serif, fontWeight: 600, color: C.charcoal }}
           >
-            This Week
+            {isCurrentWeek
+              ? "This Week"
+              : weekOffset > 0
+                ? `In ${weekOffset} Week${weekOffset > 1 ? "s" : ""}`
+                : `${Math.abs(weekOffset)} Week${Math.abs(weekOffset) > 1 ? "s" : ""} Ago`}
           </h1>
-          <p className="text-sm" style={{ ...sans, color: C.muted }}>
-            {weekLabel}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setWeekOffset((w) => w - 1);
+                setMealPlan(null);
+                setLoading(true);
+              }}
+              disabled={!canGoBack}
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity"
+              style={{ background: C.sand, opacity: canGoBack ? 1 : 0.3 }}
+            >
+              <ChevronLeft size={14} color={C.charcoal} />
+            </button>
+            <p className="text-sm" style={{ ...sans, color: C.muted }}>
+              {weekLabel}
+            </p>
+            <button
+              onClick={() => {
+                setWeekOffset((w) => w + 1);
+                setMealPlan(null);
+                setLoading(true);
+              }}
+              disabled={!canGoForward}
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity"
+              style={{ background: C.sand, opacity: canGoForward ? 1 : 0.3 }}
+            >
+              <ChevronRight size={14} color={C.charcoal} />
+            </button>
+          </div>
+          <p className="text-xs md:hidden" style={{ ...sans, color: C.faint }}>
+            Double tap a meal to move it
           </p>
         </div>
+
         <div className="flex items-center gap-3">
           {dragState.dragging && (
             <p className="text-xs" style={{ ...sans, color: C.muted }}>
@@ -920,7 +1001,7 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
               className="text-xs font-semibold"
               style={{ ...sans, color: C.primary }}
             >
-              Tap a slot to move {selectedEntry.recipes?.name}
+              Tap "Move here" to relocate · tap card again to cancel
             </p>
           )}
           <button
@@ -998,6 +1079,7 @@ export function ThisWeekScreen({ onOpenRecipe, userId }) {
           defaultDay={addModal.day}
           defaultMealTime={addModal.mealTime}
           onClose={() => setAddModal(null)}
+          weekStart={weekStartISO}
           onAdded={() => {
             setAddModal(null);
             loadPlan();
@@ -1038,20 +1120,20 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
 
   return (
     <div
-      className="fixed md:absolute inset-0 z-20 flex items-end md:items-center justify-center md:p-8"
+      className="fixed md:absolute inset-0 z-40 flex items-end md:items-center justify-center md:p-8"
       style={{ background: "rgba(43,43,43,0.45)" }}
     >
       <div
         className="relative w-full md:max-w-4xl rounded-t-2xl md:rounded-2xl overflow-hidden shadow-2xl flex flex-col md:grid"
         style={{
           gridTemplateColumns: "360px 1fr",
-          maxHeight: "92vh",
+          maxHeight: "85vh",
           background: C.bg,
         }}
       >
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center z-10"
+          className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center z-50"
           style={{ background: "rgba(255,251,245,0.9)" }}
         >
           <X size={16} color={C.charcoal} />
@@ -1063,7 +1145,8 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
           style={{
             borderRight: "none",
             borderBottom: `1px solid ${C.line}`,
-            maxHeight: "45vh",
+            maxHeight: "40vh",
+            overflowY: "auto",
           }}
         >
           <div className="relative w-full mb-4">
@@ -1218,7 +1301,7 @@ export function RecipeDetailModal({ recipe: recipeProp, onClose, userId }) {
         {/* Right */}
         <div
           className="p-4 md:p-6 overflow-y-auto"
-          style={{ maxHeight: "47vh", flex: 1 }}
+          style={{ maxHeight: "45vh", flex: 1, overflowY: "auto" }}
         >
           <h3
             className="text-sm font-bold mb-3"

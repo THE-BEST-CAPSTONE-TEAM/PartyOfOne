@@ -409,7 +409,24 @@ function CategorySection({
 
 // ── Grocery List Screen ───────────────────────
 
-export default function GroceryListScreen({ userId }) {
+export default function GroceryListScreen({ userId, weekOffset = 0 }) {
+  const getMonday = (offset = 0) => {
+    const today = new Date();
+    const day = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  };
+
+  const currentMonday = getMonday(weekOffset);
+  const currentSunday = new Date(currentMonday);
+  currentSunday.setDate(currentMonday.getDate() + 6);
+  const fmt = (d) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const weekLabel = `${fmt(currentMonday)} – ${fmt(currentSunday)}`;
+  const weekStartISO = currentMonday.toISOString();
+
   const [groceryList, setGroceryList] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -420,19 +437,19 @@ export default function GroceryListScreen({ userId }) {
   const [showShare, setShowShare] = useState(false);
 
   // Calculate current week label dynamically
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  const fmt = (d) =>
-    d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const weekLabel = `${fmt(monday)} – ${fmt(sunday)}`;
+  // const today = new Date();
+  // const dayOfWeek = today.getDay();
+  // const monday = new Date(today);
+  // monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  // const sunday = new Date(monday);
+  // sunday.setDate(monday.getDate() + 6);
+  // const fmt = (d) =>
+  //   d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  // const weekLabel = `${fmt(monday)} – ${fmt(sunday)}`;
 
   useEffect(() => {
     loadGroceryList();
-  }, [userId]);
+  }, [userId, weekOffset]); // ✅ add weekOffset
 
   async function loadGroceryList() {
     setLoading(true);
@@ -449,7 +466,7 @@ export default function GroceryListScreen({ userId }) {
   async function handleGenerate() {
     setGenerating(true);
     try {
-      const data = await generateGroceryList(userId);
+      const data = await generateGroceryList(userId, weekStartISO); // ✅
       setGroceryList(data);
     } catch (err) {
       setError(err.message);
@@ -457,7 +474,6 @@ export default function GroceryListScreen({ userId }) {
       setGenerating(false);
     }
   }
-
   async function handleToggle(item) {
     setGroceryList((prev) => ({
       ...prev,
@@ -597,7 +613,12 @@ export default function GroceryListScreen({ userId }) {
             </div>
           </div>
           <p className="text-sm mb-4" style={{ ...sans, color: C.muted }}>
-            Week of {weekLabel}
+            {weekOffset === 0
+              ? "This week"
+              : weekOffset > 0
+                ? `${weekOffset} week${weekOffset > 1 ? "s" : ""} ahead`
+                : `${Math.abs(weekOffset)} week${Math.abs(weekOffset) > 1 ? "s" : ""} ago"}`}{" "}
+            · {weekLabel}
           </p>
           {/* Progress bar */}
           {items.length > 0 && (

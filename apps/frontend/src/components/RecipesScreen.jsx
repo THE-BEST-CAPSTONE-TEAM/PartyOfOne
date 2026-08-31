@@ -81,7 +81,7 @@ function AddToWeekModal({ recipe, userId, onClose, onAdded }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-30 flex items-center justify-center"
       style={{ background: "rgba(43,43,43,0.5)" }}
       onClick={onClose}
     >

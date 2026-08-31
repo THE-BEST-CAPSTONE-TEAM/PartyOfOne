@@ -152,13 +152,19 @@ export async function createRecipe(req, res, next) {
 export async function getMealPlan(req, res, next) {
   try {
     const { userId } = req.params;
+    const { weekStart } = req.query; // ✅ accept specific week
 
-    // Get Monday of the current week
-    const today = new Date();
-    const day = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-    monday.setHours(0, 0, 0, 0);
+    let monday;
+    if (weekStart) {
+      monday = new Date(weekStart);
+      monday.setHours(0, 0, 0, 0);
+    } else {
+      const today = new Date();
+      const day = today.getDay();
+      monday = new Date(today);
+      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+      monday.setHours(0, 0, 0, 0);
+    }
 
     const mealPlan = await prisma.meal_plans.findFirst({
       where: {
@@ -183,10 +189,7 @@ export async function getMealPlan(req, res, next) {
       },
     });
 
-    if (!mealPlan) {
-      return res.json(null);
-    }
-
+    if (!mealPlan) return res.json(null);
     res.json(mealPlan);
   } catch (error) {
     next(error);
@@ -195,17 +198,19 @@ export async function getMealPlan(req, res, next) {
 
 export async function addMealPlanEntry(req, res, next) {
   try {
-    const { userId, recipeId, dayOfWeek, mealTime } = req.body;
+    const { userId, recipeId, dayOfWeek, mealTime, weekStart } = req.body;
 
-    if (!userId || !recipeId || !dayOfWeek || !mealTime) {
-      return res.status(400).json({ message: "userId, recipeId, dayOfWeek and mealTime are required" });
+    let monday;
+    if (weekStart) {
+      monday = new Date(weekStart);
+      monday.setHours(0, 0, 0, 0);
+    } else {
+      const today = new Date();
+      const day = today.getDay();
+      monday = new Date(today);
+      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+      monday.setHours(0, 0, 0, 0);
     }
-
-    const today = new Date();
-    const day = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-    monday.setHours(0, 0, 0, 0);
 
     let mealPlan = await prisma.meal_plans.findFirst({
       where: { user_id: userId, week_start: monday },
@@ -257,15 +262,21 @@ export async function getMealTypes(_req, res, next) {
 
 // ── GROCERY LIST ──────────────────────────────
 
-export async function getGroceryList(req, res, next) {
+export async function generateGroceryList(req, res, next) {
   try {
-    const { userId } = req.params;
+    const { userId, weekStart } = req.body; // ✅ accept specific week
 
-    const today = new Date();
-    const day = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-    monday.setHours(0, 0, 0, 0);
+    let monday;
+    if (weekStart) {
+      monday = new Date(weekStart);
+      monday.setHours(0, 0, 0, 0);
+    } else {
+      const today = new Date();
+      const day = today.getDay();
+      monday = new Date(today);
+      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+      monday.setHours(0, 0, 0, 0);
+    }
 
     const mealPlan = await prisma.meal_plans.findFirst({
       where: { user_id: userId, week_start: monday },

@@ -270,7 +270,12 @@ function StatCard({ label, value, sub, color }) {
 
 // ── Main settings screen ──────────────────────
 
-export default function SettingsScreen({ session, onLogout, userId }) {
+export default function SettingsScreen({
+  session,
+  onLogout,
+  userId,
+  weekOffset = 0,
+}) {
   const [tab, setTab] = useState("insights");
   const [mealPlan, setMealPlan] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -295,19 +300,23 @@ export default function SettingsScreen({ session, onLogout, userId }) {
   //   }, [userId]);
 
   useEffect(() => {
-    if (!userId) {
-      console.log("No userId yet");
-      return;
-    }
-    console.log("Fetching meal plan for userId:", userId);
-    fetchMealPlan(userId)
-      .then((data) => {
-        console.log("Meal plan data:", data);
-        setMealPlan(data);
-      })
-      .catch((err) => console.error("Meal plan error:", err))
+    if (!userId) return;
+    const getMonday = (offset = 0) => {
+      const today = new Date();
+      const day = today.getDay();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+      monday.setHours(0, 0, 0, 0);
+      return monday;
+    };
+    const weekStartISO = getMonday(weekOffset).toISOString();
+
+    setLoading(true);
+    fetchMealPlan(userId, weekStartISO) // ✅
+      .then(setMealPlan)
+      .catch(console.error)
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [userId, weekOffset]); // ✅ reload when week changes
 
   // ── Derive data from meal plan ──
   const entries = mealPlan?.meal_plan_entries || [];
@@ -435,6 +444,17 @@ export default function SettingsScreen({ session, onLogout, userId }) {
         >
           Settings
         </h1>
+        {tab === "insights" && weekOffset !== 0 && (
+          <p
+            className="text-xs mb-4 px-3 py-2 rounded-xl"
+            style={{ ...sans, color: C.muted, background: C.sand }}
+          >
+            Showing insights for{" "}
+            {weekOffset > 0
+              ? `${weekOffset} week${weekOffset > 1 ? "s" : ""} ahead`
+              : `${Math.abs(weekOffset)} week${Math.abs(weekOffset) > 1 ? "s" : ""} ago`}
+          </p>
+        )}
 
         {/* Tab bar */}
         <div
@@ -442,14 +462,14 @@ export default function SettingsScreen({ session, onLogout, userId }) {
           style={{ background: C.sand }}
         >
           {[
-            { key: "insights", label: "📊 Insights" },
-            { key: "account", label: "👤 Account" },
-            { key: "preferences", label: "⚙️ Preferences" },
+            { key: "insights", label: "Insights" },
+            { key: "account", label: "Account" },
+            { key: "preferences", label: "Preferences" },
           ].map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
+              className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap"
               style={{
                 ...sans,
                 background: tab === key ? C.card : "transparent",
